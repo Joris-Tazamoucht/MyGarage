@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="MyGarage/MyGarage.csproj" />
+  <Project Path="MyGarageAPI/MyGarageAPI.csproj" />
+</Solution>
