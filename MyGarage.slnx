@@ -1,4 +1,6 @@
 <Solution>
-  <Project Path="MyGarage/MyGarage.csproj" />
+  <Project Path="MyGarage/MyGarage.csproj">
+    <BuildDependency Project="MyGarageAPI/MyGarageAPI.csproj" />
+  </Project>
   <Project Path="MyGarageAPI/MyGarageAPI.csproj" />
 </Solution>
