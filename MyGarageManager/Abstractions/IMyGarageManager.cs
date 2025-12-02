@@ -7,7 +7,7 @@ namespace Manager.Abstractions
 {
     public interface IMyGarageManager
     {
-        public Task<Vehicle> GetVehicleAsync(string immatriculation);
+        public Task<List<Vehicle>> GetVehicleAsync(string immatriculation);
         public Task<Vehicle> AddVehicleAsync(Vehicle vehicle);
         public Task<Vehicle> DeleteVehicleAsync(string immatriculation);
         public Task<VehicleHistory> GetHistVehicleAsync (string immatriculation);

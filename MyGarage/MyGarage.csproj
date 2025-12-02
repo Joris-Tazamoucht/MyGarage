@@ -12,4 +12,9 @@
     <Folder Include="Models\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MyGarageAPI\API.csproj" />
+    <ProjectReference Include="..\MyGarageModels\Models.csproj" />
+  </ItemGroup>
+
 </Project>

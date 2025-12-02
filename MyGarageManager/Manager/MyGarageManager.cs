@@ -13,7 +13,7 @@ namespace Manager.Manager
             _myGarageRepository = myGarageRepository;
         }
 
-        public async Task<Vehicle> GetVehicleAsync(string immatriculation)
+        public async Task<List<Vehicle>> GetVehicleAsync(string immatriculation)
         {
             var res = await _myGarageRepository.GetVehicleAsync(immatriculation);
 

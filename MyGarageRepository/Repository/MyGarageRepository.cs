@@ -14,7 +14,7 @@ namespace Repository.Repository
             _connectionString = connectionString;
         }
 
-        public async Task<Vehicle> GetVehicleAsync(string immatriculation)
+        public async Task<List<Vehicle>> GetVehicleAsync(string immatriculation)
         {
             using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
@@ -24,31 +24,37 @@ namespace Repository.Repository
             cmd.Parameters.AddWithValue("@immatriculation", immatriculation);
 
             using var reader = await cmd.ExecuteReaderAsync();
-            if (await reader.ReadAsync())
+
+            var vehicles = new List<Vehicle>();
+
+            while (await reader.ReadAsync())
             {
-                return new Vehicle
+                vehicles.Add(new Vehicle
                 {
                     ID = reader.GetInt32(0),
-                    marque = reader.GetString(1),
-                    modele = reader.GetString(2),
-                    immatriculation = reader.GetString(3),
-                };
+                    Marque = reader.GetString(1),
+                    Modele = reader.GetString(2),
+                    Kilometrage = reader.GetInt32(3),
+                    Annee = reader.GetInt32(4),
+                    Immatriculation = reader.GetString(5),
+                });
             }
 
-            return null;
+            return vehicles;
         }
 
         public async Task<Vehicle> AddVehicleAsync(Vehicle vehicle)
         {
             using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
-            string query = "INSERT INTO Vehicles (marque, modele, immatriculation, kilometrage) VALUES (@marque, @modele, @immatriculation, @kilometrage); " +
+            string query = "INSERT INTO Vehicles (marque, modele, immatriculation, kilometrage, annee) VALUES (@marque, @modele, @immatriculation, @kilometrage, @annee); " +
                            "SELECT last_insert_rowid();";
             using var cmd = new SqliteCommand(query, conn);
-            cmd.Parameters.AddWithValue("@marque", vehicle.marque ?? string.Empty);
-            cmd.Parameters.AddWithValue("@modele", vehicle.modele ?? string.Empty);
-            cmd.Parameters.AddWithValue("@kilometrage", vehicle.kilometrage ?? 0);
-            cmd.Parameters.AddWithValue("@immatriculation", vehicle.immatriculation ?? string.Empty);
+            cmd.Parameters.AddWithValue("@marque", vehicle.Marque ?? string.Empty);
+            cmd.Parameters.AddWithValue("@modele", vehicle.Modele ?? string.Empty);
+            cmd.Parameters.AddWithValue("@kilometrage", vehicle.Kilometrage ?? 0);
+            cmd.Parameters.AddWithValue("@annee", vehicle.Annee ?? 0);
+            cmd.Parameters.AddWithValue("@immatriculation", vehicle.Immatriculation ?? string.Empty);
             var result = await cmd.ExecuteScalarAsync();
             if (result != null && int.TryParse(result.ToString(), out int newId))
             {
@@ -76,9 +82,9 @@ namespace Repository.Repository
                     vehicleToDelete = new Vehicle
                     {
                         ID = reader.GetInt32(0),
-                        marque = reader.GetString(1),
-                        modele = reader.GetString(2),
-                        immatriculation = reader.GetString(3),
+                        Marque = reader.GetString(1),
+                        Modele = reader.GetString(2),
+                        Immatriculation = reader.GetString(3),
                     };
                 }
             }
@@ -113,9 +119,9 @@ namespace Repository.Repository
                     vehicle = new Vehicle
                     {
                         ID = reader.GetInt32(0),
-                        marque = reader.GetString(1),
-                        modele = reader.GetString(2),
-                        immatriculation = reader.GetString(3),
+                        Marque = reader.GetString(1),
+                        Modele = reader.GetString(2),
+                        Immatriculation = reader.GetString(3),
                     };
                 }
             }

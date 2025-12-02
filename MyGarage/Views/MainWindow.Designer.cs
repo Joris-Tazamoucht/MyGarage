@@ -32,11 +32,7 @@
             button2 = new Button();
             button3 = new Button();
             dataGridView1 = new DataGridView();
-            vehicule = new DataGridViewTextBoxColumn();
-            kilometrage = new DataGridViewTextBoxColumn();
             dataGridView2 = new DataGridView();
-            dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
             label1 = new Label();
             label2 = new Label();
             label3 = new Label();
@@ -78,60 +74,27 @@
             // dataGridView1
             // 
             dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView1.Columns.AddRange(new DataGridViewColumn[] { vehicule, kilometrage });
-            dataGridView1.Location = new Point(414, 118);
+            dataGridView1.Location = new Point(577, 118);
             dataGridView1.Name = "dataGridView1";
             dataGridView1.RowHeadersWidth = 51;
-            dataGridView1.Size = new Size(374, 192);
+            dataGridView1.Size = new Size(211, 192);
             dataGridView1.TabIndex = 3;
-            // 
-            // vehicule
-            // 
-            vehicule.HeaderText = "Véhicule";
-            vehicule.MinimumWidth = 6;
-            vehicule.Name = "vehicule";
-            vehicule.ReadOnly = true;
-            vehicule.Width = 125;
-            // 
-            // kilometrage
-            // 
-            kilometrage.HeaderText = "Kilométrage";
-            kilometrage.MinimumWidth = 6;
-            kilometrage.Name = "kilometrage";
-            kilometrage.ReadOnly = true;
-            kilometrage.Width = 125;
             // 
             // dataGridView2
             // 
             dataGridView2.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView2.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn1, dataGridViewTextBoxColumn2 });
             dataGridView2.Location = new Point(12, 118);
             dataGridView2.Name = "dataGridView2";
             dataGridView2.RowHeadersWidth = 51;
-            dataGridView2.Size = new Size(365, 192);
+            dataGridView2.Size = new Size(526, 192);
             dataGridView2.TabIndex = 4;
-            // 
-            // dataGridViewTextBoxColumn1
-            // 
-            dataGridViewTextBoxColumn1.HeaderText = "Véhicule";
-            dataGridViewTextBoxColumn1.MinimumWidth = 6;
-            dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
-            dataGridViewTextBoxColumn1.ReadOnly = true;
-            dataGridViewTextBoxColumn1.Width = 125;
-            // 
-            // dataGridViewTextBoxColumn2
-            // 
-            dataGridViewTextBoxColumn2.HeaderText = "Kilométrage";
-            dataGridViewTextBoxColumn2.MinimumWidth = 6;
-            dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
-            dataGridViewTextBoxColumn2.ReadOnly = true;
-            dataGridViewTextBoxColumn2.Width = 125;
+            dataGridView2.CellContentClick += dataGridView2_CellContentClick;
             // 
             // label1
             // 
             label1.AutoSize = true;
             label1.Font = new Font("Segoe UI", 16.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label1.Location = new Point(71, 55);
+            label1.Location = new Point(557, 55);
             label1.Name = "label1";
             label1.Size = new Size(231, 38);
             label1.TabIndex = 5;
@@ -141,7 +104,7 @@
             // 
             label2.AutoSize = true;
             label2.Font = new Font("Segoe UI", 16.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label2.Location = new Point(483, 55);
+            label2.Location = new Point(151, 55);
             label2.Name = "label2";
             label2.Size = new Size(246, 38);
             label2.TabIndex = 6;
@@ -184,11 +147,7 @@
         private Button button2;
         private Button button3;
         private DataGridView dataGridView1;
-        private DataGridViewTextBoxColumn vehicule;
-        private DataGridViewTextBoxColumn kilometrage;
         private DataGridView dataGridView2;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
         private Label label1;
         private Label label2;
         private Label label3;
