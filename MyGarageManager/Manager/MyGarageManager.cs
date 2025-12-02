@@ -13,9 +13,9 @@ namespace Manager.Manager
             _myGarageRepository = myGarageRepository;
         }
 
-        public async Task<Vehicle> GetHistVehicleAsync(string immatriculation)
+        public async Task<Vehicle> GetVehicleAsync(string immatriculation)
         {
-            var res = await _myGarageRepository.GetHistVehicleAsync(immatriculation);
+            var res = await _myGarageRepository.GetVehicleAsync(immatriculation);
 
             if (res is not null)
                 return res;
@@ -34,6 +34,14 @@ namespace Manager.Manager
         public async Task<Vehicle> DeleteVehicleAsync(string immatriculation)
         {
             var res = await _myGarageRepository.DeleteVehicleAsync(immatriculation);
+            if (res is not null)
+                return res;
+            return null;
+        }
+
+        public async Task<VehicleHistory> GetHistVehicleAsync (string immatriculation)
+        {
+            var res = await _myGarageRepository.GetHistVehicleAsync(immatriculation);
             if (res is not null)
                 return res;
             return null;

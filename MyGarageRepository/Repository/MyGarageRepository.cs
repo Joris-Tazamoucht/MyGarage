@@ -14,7 +14,7 @@ namespace Repository.Repository
             _connectionString = connectionString;
         }
 
-        public async Task<Vehicle> GetHistVehicleAsync(string immatriculation)
+        public async Task<Vehicle> GetVehicleAsync(string immatriculation)
         {
             using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
@@ -93,6 +93,64 @@ namespace Repository.Repository
             await deleteCmd.ExecuteNonQueryAsync();
 
             return vehicleToDelete;
+        }
+
+        public async Task<VehicleHistory> GetHistVehicleAsync(string immatriculation)
+        {
+            using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync();
+
+            // 1️⃣ Récupérer le véhicule
+            string vehicleQuery = "SELECT * FROM vehicles WHERE immatriculation = @immatriculation";
+            using var vehicleCmd = new SqliteCommand(vehicleQuery, conn);
+            vehicleCmd.Parameters.AddWithValue("@immatriculation", immatriculation);
+
+            Vehicle vehicle = null;
+            using (var reader = await vehicleCmd.ExecuteReaderAsync())
+            {
+                if (await reader.ReadAsync())
+                {
+                    vehicle = new Vehicle
+                    {
+                        ID = reader.GetInt32(0),
+                        marque = reader.GetString(1),
+                        modele = reader.GetString(2),
+                        immatriculation = reader.GetString(3),
+                    };
+                }
+            }
+
+            if (vehicle == null)
+                return null; // véhicule non trouvé
+
+            // 2️⃣ Récupérer l'historique des entretiens
+            string historyQuery = "SELECT * FROM entretien WHERE vehicle_id = @id ORDER BY date_entretien DESC";
+            using var historyCmd = new SqliteCommand(historyQuery, conn);
+            historyCmd.Parameters.AddWithValue("@id", vehicle.ID);
+
+            var historique = new List<Entretien>();
+            using (var reader = await historyCmd.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    historique.Add(new Entretien
+                    {
+                        id = reader.GetInt32(0),
+                        vehicle_id = reader.GetInt32(1),
+                        date_etretien = reader.GetString(2),
+                        type_etretien = reader.GetString(3),
+                        kilometrage = reader.GetInt32(4),
+                        cout = reader.GetFloat(5),
+                        notes = reader.GetString(6)
+                    });
+                }
+            }
+
+            return new VehicleHistory
+            {
+                Vehicle = vehicle,
+                Historique = historique
+            };
         }
     }
 }

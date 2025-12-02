@@ -29,14 +29,24 @@ namespace MyGarageAPI.Controllers
 
         [HttpGet]
         [Route("[Action]")]
-        public async Task<ActionResult<List<Vehicle>>> GetHistVehicle([FromQuery] string immatriculation)
+        public async Task<ActionResult<List<Vehicle>>> GetVehicle([FromQuery] string immatriculation)
         {
-            var vehicles = await _myGarageManager.GetHistVehicleAsync(immatriculation);
+            var vehicles = await _myGarageManager.GetVehicleAsync(immatriculation);
 
             if (vehicles == null)
                 return NotFound(); // retourne 404 si rien trouvé
 
             return Ok(vehicles); // retourne la liste des véhicules trouvés
+        }
+
+        [HttpGet]
+        [Route("[Action]")]
+        public async Task<IActionResult> GetHistVehicle (string immatriculation)
+        {
+            var res = await _myGarageManager.GetHistVehicleAsync(immatriculation);
+            if (res is not null) 
+                return Ok(res);
+            return NotFound("Véhicule non trouvé.");
         }
         #endregion
 
