@@ -1,6 +1,12 @@
 <Solution>
   <Project Path="MyGarage/MyGarage.csproj">
     <BuildDependency Project="MyGarageAPI/MyGarageAPI.csproj" />
+    <BuildDependency Project="MyGarageManager/MyGarageManager.csproj" />
+    <BuildDependency Project="MyGarageModels/MyGarageModels.csproj" />
+    <BuildDependency Project="MyGarageRepository/MyGarageRepository.csproj" />
   </Project>
   <Project Path="MyGarageAPI/MyGarageAPI.csproj" />
+  <Project Path="MyGarageManager/MyGarageManager.csproj" Id="653d7583-74b5-4fec-b546-72f555e495a4" />
+  <Project Path="MyGarageModels/MyGarageModels.csproj" Id="91a5877f-e2fd-42e4-a100-6f393979b6ff" />
+  <Project Path="MyGarageRepository/MyGarageRepository.csproj" Id="ae23de03-e855-4a8a-8864-69a3a7c82ffc" />
 </Solution>
