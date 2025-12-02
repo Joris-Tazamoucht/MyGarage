@@ -53,6 +53,7 @@
             button1.TabIndex = 0;
             button1.Text = "Ajouter un véhicule";
             button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
             // 
             // button2
             // 

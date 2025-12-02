@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Models.Models;
 
-namespace MyGarageManager.Abstractions
+namespace Manager.Abstractions
 {
-    internal interface IMyGarageManager
+    public interface IMyGarageManager
     {
+        public Task<Vehicle> GetHistVehicleAsync(string immatriculation);
     }
 }

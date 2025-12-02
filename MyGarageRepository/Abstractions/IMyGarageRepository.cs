@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Models.Models;
 
-namespace MyGarageRepository.Abstractions
+namespace Repository.Abstractions
 {
-    internal interface IMyGarageRepository
+    public interface IMyGarageRepository
     {
+        public Task<Vehicle> GetHistVehicleAsync(string immatriculation);
     }
 }

@@ -15,5 +15,10 @@ namespace MyGarage
             var version = Assembly.GetExecutingAssembly().GetName().Version;
             label3.Text = $"Version : {version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
         }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
