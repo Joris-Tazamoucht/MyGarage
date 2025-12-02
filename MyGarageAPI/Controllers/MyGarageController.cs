@@ -45,8 +45,11 @@ namespace MyGarageAPI.Controllers
         [Route("[Action]")]
         public async Task<IActionResult> AddVehicle ([FromBody] Vehicle vehicle)
         {
-            // Logique pour ajouter un véhicule (non implémentée ici)
-            return Ok("Véhicule ajouté avec succès (fonctionnalité non implémentée).");
+            var res = await _myGarageManager.AddVehicleAsync(vehicle);
+            if (res is not null) 
+                return Ok("Véhicule ajouté avec succès.");
+
+            return BadRequest("Erreur lors de l'ajout du véhicule.");
         }
         #endregion
 
@@ -55,8 +58,11 @@ namespace MyGarageAPI.Controllers
         [Route("[Action]")]
         public async Task<IActionResult> DeleteVehicle ([FromQuery] string immatriculation)
         {
-            // Logique pour supprimer un véhicule (non implémentée ici)
-            return Ok("Véhicule supprimé avec succès.");
+            var res = await _myGarageManager.DeleteVehicleAsync(immatriculation);
+            if (res is not null) 
+                return Ok("Véhicule supprimé avec succès.");
+
+            return BadRequest("Erreur lors de la suppression du véhicule.");
         }
         #endregion
     }

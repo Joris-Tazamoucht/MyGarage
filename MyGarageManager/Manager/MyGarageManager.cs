@@ -22,5 +22,21 @@ namespace Manager.Manager
 
             return null;
         }
+
+        public async Task<Vehicle> AddVehicleAsync(Vehicle vehicle)
+        {
+            var res = await _myGarageRepository.AddVehicleAsync(vehicle);
+            if (res is not null)
+                return res;
+            return null;
+        }
+
+        public async Task<Vehicle> DeleteVehicleAsync(string immatriculation)
+        {
+            var res = await _myGarageRepository.DeleteVehicleAsync(immatriculation);
+            if (res is not null)
+                return res;
+            return null;
+        }
     }
 }
