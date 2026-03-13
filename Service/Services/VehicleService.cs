@@ -25,5 +25,11 @@ namespace Service.Services
 
         public async Task<VehicleHistory> GetHistVehicleAsync(string immatriculation)
             => await _manager.GetHistVehicleAsync(immatriculation);
+
+        public async Task<List<Vehicle>> GetAllVehiclesAsync()
+            => await _manager.GetAllVehiclesAsync();
+
+        public async Task<Entretien?> AddEntretienAsync(Entretien entretien)
+            => await _manager.AddEntretienAsync(entretien);
     }
 }

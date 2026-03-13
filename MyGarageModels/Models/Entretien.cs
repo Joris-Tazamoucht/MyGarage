@@ -9,7 +9,7 @@ namespace Models.Models
         public int id { get; set; }
         public int vehicle_id { get; set; }
         public string? date_etretien { get; set; }
-        public string? type_etretien { get; set; }
+        public string? type_entretien { get; set; }
         public int? kilometrage { get; set; }
         public float? cout { get; set; }
         public string? notes { get; set; }

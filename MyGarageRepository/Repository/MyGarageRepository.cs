@@ -90,12 +90,10 @@ namespace Repository.Repository
             Vehicle vehicleToDelete = null;
             using (var reader = await selectCmd.ExecuteReaderAsync())
             {
-                if (await reader.ReadAsync())
-                    vehicleToDelete = MapVehicle(reader); // ✅ mapping centralisé
+                if (await reader.ReadAsync()) vehicleToDelete = MapVehicle(reader);
             }
 
-            if (vehicleToDelete == null)
-                return null;
+            if (vehicleToDelete == null) return null;
 
             string deleteQuery = "DELETE FROM Vehicles WHERE id = @id";
             using var deleteCmd = new SqliteCommand(deleteQuery, conn);
@@ -118,7 +116,7 @@ namespace Repository.Repository
             using (var reader = await vehicleCmd.ExecuteReaderAsync())
             {
                 if (await reader.ReadAsync())
-                    vehicle = MapVehicle(reader); // ✅ mapping centralisé
+                    vehicle = MapVehicle(reader);
             }
 
             if (vehicle == null)
@@ -138,7 +136,7 @@ namespace Repository.Repository
                         id = reader.GetInt32(0),
                         vehicle_id = reader.GetInt32(1),
                         date_etretien = reader.GetString(2),
-                        type_etretien = reader.GetString(3),
+                        type_entretien = reader.GetString(3),
                         kilometrage = reader.GetInt32(4),
                         cout = reader.GetFloat(5),
                         notes = reader.GetString(6)
@@ -159,5 +157,31 @@ namespace Repository.Repository
             Annee = reader.GetInt32(4),
             Immatriculation = reader.GetString(5),
         };
+
+        public async Task<Entretien?> AddEntretienAsync(Entretien entretien)
+        {
+            using var conn = new SqliteConnection(_connectionString);
+            await conn.OpenAsync();
+
+            string query = "INSERT INTO entretien (vehicle_id, date_entretien, type_entretien, kilometrage, cout, notes) " +
+                           "VALUES (@vehicle_id, @date_entretien, @type_entretien, @kilometrage, @cout, @notes); " +
+                           "SELECT last_insert_rowid();";
+
+            using var cmd = new SqliteCommand(query, conn);
+            cmd.Parameters.AddWithValue("@vehicle_id", entretien.vehicle_id);
+            cmd.Parameters.AddWithValue("@date_entretien", entretien.date_etretien ?? string.Empty);
+            cmd.Parameters.AddWithValue("@type_entretien", entretien.type_entretien ?? string.Empty);
+            cmd.Parameters.AddWithValue("@kilometrage", entretien.kilometrage ?? 0);
+            cmd.Parameters.AddWithValue("@cout", entretien.cout ?? 0);
+            cmd.Parameters.AddWithValue("@notes", entretien.notes ?? string.Empty);
+
+            var result = await cmd.ExecuteScalarAsync();
+            if (result != null && int.TryParse(result.ToString(), out int newId))
+            {
+                entretien.id = newId;
+                return entretien;
+            }
+            return null;
+        }
     }
 }

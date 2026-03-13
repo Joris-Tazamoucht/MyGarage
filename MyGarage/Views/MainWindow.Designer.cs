@@ -1,6 +1,6 @@
-﻿namespace MyGarage
+﻿namespace MyGarage.Views
 {
-    partial class MyGarage
+    partial class MainWindow
     {
         /// <summary>
         ///  Required designer variable.
@@ -60,6 +60,7 @@
             button2.TabIndex = 1;
             button2.Text = "Ajouter un entretien";
             button2.UseVisualStyleBackColor = true;
+            button2.Click += button2_Click;
             // 
             // button3
             // 
@@ -70,6 +71,7 @@
             button3.TabIndex = 2;
             button3.Text = "Voir l'historique";
             button3.UseVisualStyleBackColor = true;
+            button3.Click += button3_Click;
             // 
             // dataGridView1
             // 
@@ -77,7 +79,7 @@
             dataGridView1.Location = new Point(577, 118);
             dataGridView1.Name = "dataGridView1";
             dataGridView1.RowHeadersWidth = 51;
-            dataGridView1.Size = new Size(211, 192);
+            dataGridView1.Size = new Size(546, 192);
             dataGridView1.TabIndex = 3;
             // 
             // dataGridView2
@@ -119,11 +121,11 @@
             label3.TabIndex = 7;
             label3.Text = "label3";
             // 
-            // MyGarage
+            // MainWindow
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(1169, 450);
             Controls.Add(label3);
             Controls.Add(label2);
             Controls.Add(label1);
@@ -133,7 +135,7 @@
             Controls.Add(button2);
             Controls.Add(button1);
             ForeColor = SystemColors.ControlText;
-            Name = "MyGarage";
+            Name = "MainWindow";
             Text = "MyGarage";
             ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
             ((System.ComponentModel.ISupportInitialize)dataGridView2).EndInit();

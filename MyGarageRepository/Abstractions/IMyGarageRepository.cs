@@ -12,5 +12,7 @@ namespace Repository.Abstractions
         public Task<Vehicle> DeleteVehicleAsync(string immatriculation);
         public Task<VehicleHistory> GetHistVehicleAsync(string immatriculation);
         Task<List<Vehicle>> GetAllVehiclesAsync();
+        Task<Entretien?> AddEntretienAsync(Entretien entretien);
+
     }
 }

@@ -51,5 +51,8 @@ namespace Manager.Manager
         {
             return await _myGarageRepository.GetAllVehiclesAsync();
         }
+
+        public async Task<Entretien?> AddEntretienAsync(Entretien entretien)
+            => await _myGarageRepository.AddEntretienAsync(entretien);
     }
 }
