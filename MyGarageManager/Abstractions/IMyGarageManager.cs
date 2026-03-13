@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Models.Models;
+﻿using Models.Models;
 
 namespace Manager.Abstractions
 {
     public interface IMyGarageManager
     {
-        public Task<List<Vehicle>> GetVehicleAsync(string immatriculation);
-        public Task<Vehicle> AddVehicleAsync(Vehicle vehicle);
-        public Task<Vehicle> DeleteVehicleAsync(string immatriculation);
-        public Task<VehicleHistory> GetHistVehicleAsync (string immatriculation);
+        Task<List<Vehicle>> GetVehicleAsync(string immatriculation);
+        Task<List<Vehicle>> GetAllVehiclesAsync();   // ← nouveau
+        Task<Vehicle> AddVehicleAsync(Vehicle vehicle);
+        Task<Vehicle> DeleteVehicleAsync(string immatriculation);
+        Task<VehicleHistory> GetHistVehicleAsync(string immatriculation);
     }
 }

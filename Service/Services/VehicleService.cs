@@ -1,39 +1,29 @@
-﻿using System.Net.Http;
-using System.Text.Json;
+﻿using Manager.Abstractions;
 using Models.Models;
+using Service.Abstractions;
 
 namespace Service.Services
 {
-    public class VehicleService
+    public class VehicleService : IVehicleService
     {
-        private readonly HttpClient _httpClient;
+        private readonly IMyGarageManager _manager;
 
-        public VehicleService(string apiUrl)
+        // Plus de URL HTTP — on injecte le manager directement
+        public VehicleService(IMyGarageManager manager)
         {
-            _httpClient = new HttpClient { BaseAddress = new Uri(apiUrl) };
+            _manager = manager;
         }
 
         public async Task<List<Vehicle>> GetVehiclesAsync(string immatriculation)
-        {
-            var immatEncoded = Uri.EscapeDataString(immatriculation);
-            var response = await _httpClient.GetAsync($"/MyGarage/GetVehicle?immatriculation={immatEncoded}");
-            response.EnsureSuccessStatusCode();
-            var json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<List<Vehicle>>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-        }
+            => await _manager.GetVehicleAsync(immatriculation);
 
-        public async Task<VehicleHistory> GetVehicleHistoryAsync(string immatriculation)
-        {
-            var response = await _httpClient.GetAsync($"/MyGarage/GetHistVehicle/{immatriculation}");
-            response.EnsureSuccessStatusCode();
-            var json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<VehicleHistory>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-        }
+        public async Task<Vehicle> AddVehicleAsync(Vehicle vehicle)
+            => await _manager.AddVehicleAsync(vehicle);
+
+        public async Task<Vehicle> DeleteVehicleAsync(string immatriculation)
+            => await _manager.DeleteVehicleAsync(immatriculation);
+
+        public async Task<VehicleHistory> GetHistVehicleAsync(string immatriculation)
+            => await _manager.GetHistVehicleAsync(immatriculation);
     }
 }

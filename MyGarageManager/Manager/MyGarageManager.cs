@@ -46,5 +46,10 @@ namespace Manager.Manager
                 return res;
             return null;
         }
+
+        public async Task<List<Vehicle>> GetAllVehiclesAsync()
+        {
+            return await _myGarageRepository.GetAllVehiclesAsync();
+        }
     }
 }

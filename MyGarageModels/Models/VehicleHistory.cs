@@ -6,7 +6,7 @@ namespace Models.Models
 {
     public class VehicleHistory
     {
-        public Vehicle Vehicle { get; set; }
+        public Vehicle? Vehicle { get; set; }
         public List<Entretien> Historique { get; set; } = new List<Entretien>();
     }
 

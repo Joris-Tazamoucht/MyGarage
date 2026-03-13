@@ -1,14 +1,12 @@
 <Solution>
   <Project Path="BackgroundWorker/BackgroundWorker.csproj" Id="187cd4ff-beac-4857-bf9d-a9c70837b0db" />
   <Project Path="MyGarage/MyGarage.csproj">
-    <BuildDependency Project="MyGarageAPI/API.csproj" />
     <BuildDependency Project="MyGarageManager/Manager.csproj" />
     <BuildDependency Project="MyGarageModels/Models.csproj" />
     <BuildDependency Project="MyGarageRepository/Repository.csproj" />
   </Project>
-  <Project Path="MyGarageAPI/API.csproj" />
   <Project Path="MyGarageManager/Manager.csproj" Id="653d7583-74b5-4fec-b546-72f555e495a4" />
   <Project Path="MyGarageModels/Models.csproj" Id="91a5877f-e2fd-42e4-a100-6f393979b6ff" />
   <Project Path="MyGarageRepository/Repository.csproj" Id="ae23de03-e855-4a8a-8864-69a3a7c82ffc" />
-  <Project Path="Service/Service.csproj" Id="d9c549ed-45f9-4e2e-820a-7f3c274af086" />
+  <Project Path="Service/Service.csproj" Id="0d3a28bd-580e-43d5-ace5-187e7d2cfdc5" />
 </Solution>
