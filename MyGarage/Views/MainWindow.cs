@@ -372,14 +372,30 @@ namespace MyGarage.Views
             {
                 var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
                 if (currentVersion == null) return;
+
                 var updateService = new UpdateService();
                 var update = await updateService.CheckForUpdateAsync(currentVersion);
+
+                // Debug temporaire
+                this.Invoke(() =>
+                {
+                    MessageBox.Show(
+                        $"Version actuelle : {currentVersion}\n" +
+                        $"Update trouvé : {update != null}\n" +
+                        $"Nouvelle version : {update?.NewVersion ?? "aucune"}",
+                        "Debug update");
+                });
+
                 if (update == null) return;
+
                 this.Invoke(() => { using var form = new UpdateForm(update); form.ShowDialog(this); });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // Afficher l'erreur au lieu de l'ignorer
+                this.Invoke(() => MessageBox.Show($"Erreur update : {ex.Message}", "Debug erreur"));
+            }
         }
-
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             _maintenanceChecker?.Dispose();
