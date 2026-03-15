@@ -6,6 +6,9 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+	<Version>1.0.0</Version>                    <!-- ← version du package -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>  <!-- ← version lue par Assembly.GetName().Version -->
+    <FileVersion>1.0.0.0</FileVersion> 
   </PropertyGroup>
 
   <ItemGroup>
