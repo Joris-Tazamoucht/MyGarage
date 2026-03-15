@@ -1,20 +1,27 @@
 ﻿using Models.Models;
+using MyGarage.Styles;
 
 namespace MyGarage.Views
 {
     public partial class ExportSelectionForm : Form
     {
         private readonly List<Vehicle> _vehicles;
+        private Panel pnlHeader = new Panel();
+        private Panel pnlContent = new Panel();
+        private Panel pnlFooter = new Panel();
+        private Label lblTitle = new Label();
+        private Label lblSubtitle = new Label();
+
         private CheckedListBox clbVehicles = new CheckedListBox();
-        private Button btnSelectAll = new Button();
-        private Button btnDeselectAll = new Button();
-        private Button btnExportForm = new Button();
-        private Button btnCancel = new Button();
+        private ModernButton btnSelectAll = new ModernButton(Color.FromArgb(60, 80, 120), Color.FromArgb(40, 60, 100));
+        private ModernButton btnDeselectAll = new ModernButton(Color.FromArgb(80, 80, 100), Color.FromArgb(60, 60, 80));
         private CheckBox chkEmail = new CheckBox();
         private CheckBox chkSms = new CheckBox();
         private TextBox txtEmail = new TextBox();
         private Panel pnlEmail = new Panel();
         private Panel pnlSms = new Panel();
+        private ModernButton btnExportForm = new ModernButton(AppTheme.SuccessGreen, Color.FromArgb(30, 140, 70));
+        private ModernButton btnCancel = new ModernButton(Color.FromArgb(80, 80, 100), Color.FromArgb(60, 60, 80));
 
         public List<Vehicle> SelectedVehicles { get; private set; } = new();
         public bool SendEmail => chkEmail.Checked;
@@ -25,120 +32,156 @@ namespace MyGarage.Views
         {
             InitializeComponent();
             _vehicles = vehicles;
+            BuildUI();
+            AppTheme.ThemeChanged += () => AppTheme.ApplyToForm(this);
+        }
 
+        private void BuildUI()
+        {
             this.Text = "Exporter un rapport";
-            this.Size = new Size(480, 450);
+            this.Size = new Size(500, 520);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.StartPosition = FormStartPosition.CenterParent;
             this.MaximizeBox = false;
+            this.BackColor = AppTheme.Background;
 
-            // ── Liste des véhicules ───────────────────────────────────────
+            // ── Header ────────────────────────────────────────────────────
+            pnlHeader.Dock = DockStyle.Top;
+            pnlHeader.Height = 70;
+            pnlHeader.BackColor = AppTheme.Surface;
+
+            lblTitle.Text = "📊  Exporter un rapport";
+            lblTitle.Font = AppTheme.FontTitle;
+            lblTitle.ForeColor = AppTheme.TextPrimary;
+            lblTitle.BackColor = AppTheme.Surface;
+            lblTitle.AutoSize = true;
+            lblTitle.Location = new Point(20, 12);
+
+            lblSubtitle.Text = "Sélectionnez les véhicules et les options d'envoi";
+            lblSubtitle.Font = AppTheme.FontSmall;
+            lblSubtitle.ForeColor = AppTheme.TextSub;
+            lblSubtitle.BackColor = AppTheme.Surface;
+            lblSubtitle.AutoSize = true;
+            lblSubtitle.Location = new Point(20, 44);
+
+            pnlHeader.Controls.AddRange(new Control[] { lblTitle, lblSubtitle });
+
+            // ── Contenu ───────────────────────────────────────────────────
+            pnlContent.Dock = DockStyle.Fill;
+            pnlContent.BackColor = AppTheme.Background;
+            pnlContent.Padding = new Padding(20, 12, 20, 0);
+
             var lblVehicles = new Label
             {
-                Text = "Sélectionnez les véhicules à exporter :",
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Text = "VÉHICULES",
+                Font = AppTheme.FontSmall,
+                ForeColor = AppTheme.TextSub,
                 AutoSize = true,
-                Location = new Point(12, 12)
+                Location = new Point(0, 12)
             };
 
-            clbVehicles.Location = new Point(12, 38);
-            clbVehicles.Size = new Size(440, 150);
+            clbVehicles.Location = new Point(0, 34);
+            clbVehicles.Size = new Size(450, 140);
             clbVehicles.CheckOnClick = true;
+            clbVehicles.BackColor = AppTheme.Surface;
+            clbVehicles.ForeColor = AppTheme.TextPrimary;
+            clbVehicles.BorderStyle = BorderStyle.FixedSingle;
+            clbVehicles.Font = AppTheme.FontNormal;
 
-            foreach (var v in vehicles)
-                clbVehicles.Items.Add($"{v.Marque} {v.Modele} — {v.Immatriculation}", false);
+            foreach (var v in _vehicles)  // ← vehicles → _vehicles
+                clbVehicles.Items.Add($"{v.Marque} {v.Modele}  —  {v.Immatriculation}", false);
 
             btnSelectAll.Text = "Tout sélectionner";
-            btnSelectAll.Location = new Point(12, 195);
-            btnSelectAll.Size = new Size(140, 30);
-            btnSelectAll.Click += (s, e) =>
-            {
-                for (int i = 0; i < clbVehicles.Items.Count; i++)
-                    clbVehicles.SetItemChecked(i, true);
-            };
+            btnSelectAll.Size = new Size(150, 32);
+            btnSelectAll.Location = new Point(0, 182);
+            btnSelectAll.Click += (s, e) => { for (int i = 0; i < clbVehicles.Items.Count; i++) clbVehicles.SetItemChecked(i, true); };
 
             btnDeselectAll.Text = "Désélectionner";
-            btnDeselectAll.Location = new Point(165, 195);
-            btnDeselectAll.Size = new Size(130, 30);
-            btnDeselectAll.Click += (s, e) =>
-            {
-                for (int i = 0; i < clbVehicles.Items.Count; i++)
-                    clbVehicles.SetItemChecked(i, false);
-            };
+            btnDeselectAll.Size = new Size(140, 32);
+            btnDeselectAll.Location = new Point(158, 182);
+            btnDeselectAll.Click += (s, e) => { for (int i = 0; i < clbVehicles.Items.Count; i++) clbVehicles.SetItemChecked(i, false); };
 
-            // ── Options d'envoi ───────────────────────────────────────────
             var lblEnvoi = new Label
             {
-                Text = "Options d'envoi :",
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Text = "OPTIONS D'ENVOI",
+                Font = AppTheme.FontSmall,
+                ForeColor = AppTheme.TextSub,
                 AutoSize = true,
-                Location = new Point(12, 240)
+                Location = new Point(0, 228)
             };
 
             chkEmail.Text = "Envoyer par email";
-            chkEmail.Location = new Point(12, 265);
+            chkEmail.Font = AppTheme.FontNormal;
+            chkEmail.ForeColor = AppTheme.TextPrimary;
+            chkEmail.BackColor = Color.Transparent;
             chkEmail.AutoSize = true;
+            chkEmail.Location = new Point(0, 252);
             chkEmail.CheckedChanged += (s, e) => pnlEmail.Visible = chkEmail.Checked;
 
-            // Panel email — uniquement destinataire, SMTP depuis appsettings.json
-            pnlEmail.Location = new Point(12, 290);
-            pnlEmail.Size = new Size(440, 38);
+            pnlEmail.Location = new Point(0, 278);
+            pnlEmail.Size = new Size(450, 42);
             pnlEmail.Visible = false;
+            pnlEmail.BackColor = AppTheme.Surface;
             pnlEmail.BorderStyle = BorderStyle.FixedSingle;
+            pnlEmail.Padding = new Padding(8);
 
-            pnlEmail.Controls.Add(MakeLabel("Email destinataire :", 8, 8));
-            txtEmail.Location = new Point(160, 5);
-            txtEmail.Width = 265;
-            pnlEmail.Controls.Add(txtEmail);
+            var lblEmailDest = new Label { Text = "Destinataire :", Font = AppTheme.FontSmall, ForeColor = AppTheme.TextSub, AutoSize = true, Location = new Point(8, 12) };
+            txtEmail.Font = AppTheme.FontNormal;
+            txtEmail.BackColor = AppTheme.Background;
+            txtEmail.ForeColor = AppTheme.TextPrimary;
+            txtEmail.BorderStyle = BorderStyle.None;
+            txtEmail.Location = new Point(120, 10);
+            txtEmail.Width = 315;
+            pnlEmail.Controls.AddRange(new Control[] { lblEmailDest, txtEmail });
 
             chkSms.Text = "Envoyer par SMS (Free Mobile)";
-            chkSms.Location = new Point(12, 340);
+            chkSms.Font = AppTheme.FontNormal;
+            chkSms.ForeColor = AppTheme.TextPrimary;
+            chkSms.BackColor = Color.Transparent;
             chkSms.AutoSize = true;
+            chkSms.Location = new Point(0, 332);
             chkSms.CheckedChanged += (s, e) => pnlSms.Visible = chkSms.Checked;
 
-            // Panel SMS — identifiants depuis appsettings.json
-            pnlSms.Location = new Point(12, 365);
-            pnlSms.Size = new Size(440, 30);
+            pnlSms.Location = new Point(0, 358);
+            pnlSms.Size = new Size(450, 32);
             pnlSms.Visible = false;
+            pnlSms.BackColor = AppTheme.Surface;
             pnlSms.BorderStyle = BorderStyle.FixedSingle;
 
             pnlSms.Controls.Add(new Label
             {
-                Text = "Identifiants Free Mobile lus depuis appsettings.json",
+                Text = "✅  Identifiants Free Mobile lus depuis appsettings.json",
+                Font = AppTheme.FontSmall,
+                ForeColor = AppTheme.SuccessGreen,
                 AutoSize = true,
-                ForeColor = Color.Gray,
                 Location = new Point(8, 8)
             });
 
-            // ── Boutons ───────────────────────────────────────────────────
-            btnExportForm.Text = "Exporter";
-            btnExportForm.Size = new Size(110, 35);
-            btnExportForm.Location = new Point(240, 390);
-            btnExportForm.DialogResult = DialogResult.OK;
+            pnlContent.Controls.AddRange(new Control[]
+            {
+                lblVehicles, clbVehicles, btnSelectAll, btnDeselectAll,
+                lblEnvoi, chkEmail, pnlEmail, chkSms, pnlSms
+            });
+
+            // ── Footer ────────────────────────────────────────────────────
+            pnlFooter.Dock = DockStyle.Bottom;
+            pnlFooter.Height = 60;
+            pnlFooter.BackColor = AppTheme.Surface;
+
+            btnExportForm.Text = "📊  Exporter";
+            btnExportForm.Size = new Size(130, 38);
+            btnExportForm.Location = new Point(240, 11);
             btnExportForm.Click += BtnExportForm_Click;
 
             btnCancel.Text = "Annuler";
-            btnCancel.Size = new Size(110, 35);
-            btnCancel.Location = new Point(362, 390);
-            btnCancel.DialogResult = DialogResult.Cancel;
+            btnCancel.Size = new Size(100, 38);
+            btnCancel.Location = new Point(380, 11);
+            btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
 
-            this.Controls.AddRange(new Control[]
-            {
-                lblVehicles, clbVehicles, btnSelectAll, btnDeselectAll,
-                lblEnvoi, chkEmail, pnlEmail, chkSms, pnlSms,
-                btnExportForm, btnCancel
-            });
-
+            pnlFooter.Controls.AddRange(new Control[] { btnExportForm, btnCancel });
+            this.Controls.AddRange(new Control[] { pnlContent, pnlFooter, pnlHeader });
             this.AcceptButton = btnExportForm;
-            this.CancelButton = btnCancel;
         }
-
-        private static Label MakeLabel(string text, int x, int y) => new Label
-        {
-            Text = text,
-            AutoSize = true,
-            Location = new Point(x, y)
-        };
 
         private void BtnExportForm_Click(object? sender, EventArgs e)
         {
@@ -150,19 +193,18 @@ namespace MyGarage.Views
             {
                 MessageBox.Show("Veuillez sélectionner au moins un véhicule.",
                     "Aucun véhicule", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                this.DialogResult = DialogResult.None;
                 return;
             }
-
             if (chkEmail.Checked && string.IsNullOrWhiteSpace(txtEmail.Text))
             {
                 MessageBox.Show("Veuillez saisir un email destinataire.",
                     "Champ manquant", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                this.DialogResult = DialogResult.None;
                 return;
             }
 
             SelectedVehicles = selected;
+            this.DialogResult = DialogResult.OK;
+            this.Close();
         }
     }
 }

@@ -9,6 +9,7 @@
 	<Version>1.0.0</Version>                    <!-- ← version du package -->
     <AssemblyVersion>1.0.0.0</AssemblyVersion>  <!-- ← version lue par Assembly.GetName().Version -->
     <FileVersion>1.0.0.0</FileVersion> 
+	<ApplicationIcon>Assets\mygarage.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,6 +34,16 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\garage.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\mygarage.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Assets\" />
   </ItemGroup>
 
 </Project>
