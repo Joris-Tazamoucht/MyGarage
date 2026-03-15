@@ -15,11 +15,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MyGarageManager\Manager.csproj" />
     <ProjectReference Include="..\MyGarageRepository\Repository.csproj" />
     <ProjectReference Include="..\BackgroundWorker\BackgroundWorker.csproj" />
     <ProjectReference Include="..\MyGarageModels\Models.csproj" />
     <ProjectReference Include="..\Service\Service.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

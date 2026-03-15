@@ -2,35 +2,23 @@
 {
     partial class MainWindow
     {
-        /// <summary>
-        ///  Required designer variable.
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
-        ///  Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
-            {
                 components.Dispose();
-            }
             base.Dispose(disposing);
         }
 
         #region Windows Form Designer generated code
 
-        /// <summary>
-        ///  Required method for Designer support - do not modify
-        ///  the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent()
         {
             button1 = new Button();
             button2 = new Button();
             button3 = new Button();
+            btnExport = new Button();
             dataGridView1 = new DataGridView();
             dataGridView2 = new DataGridView();
             label1 = new Label();
@@ -73,6 +61,17 @@
             button3.UseVisualStyleBackColor = true;
             button3.Click += button3_Click;
             // 
+            // btnExport
+            // 
+            btnExport.Font = new Font("Segoe UI", 13.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            btnExport.Location = new Point(812, 370);
+            btnExport.Name = "btnExport";
+            btnExport.Size = new Size(225, 50);
+            btnExport.TabIndex = 8;
+            btnExport.Text = "Exporter rapport";
+            btnExport.UseVisualStyleBackColor = true;
+            btnExport.Click += btnExport_Click;
+            // 
             // dataGridView1
             // 
             dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
@@ -90,17 +89,16 @@
             dataGridView2.RowHeadersWidth = 51;
             dataGridView2.Size = new Size(526, 192);
             dataGridView2.TabIndex = 4;
-            dataGridView2.CellContentClick += dataGridView2_CellContentClick;
             // 
             // label1
             // 
             label1.AutoSize = true;
             label1.Font = new Font("Segoe UI", 16.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label1.Location = new Point(557, 55);
+            label1.Location = new Point(723, 55);
             label1.Name = "label1";
-            label1.Size = new Size(231, 38);
+            label1.Size = new Size(240, 38);
             label1.TabIndex = 5;
-            label1.Text = "Entretiens à venir";
+            label1.Text = "Entretiens réalisés";
             // 
             // label2
             // 
@@ -134,6 +132,7 @@
             Controls.Add(button3);
             Controls.Add(button2);
             Controls.Add(button1);
+            Controls.Add(btnExport);
             ForeColor = SystemColors.ControlText;
             Name = "MainWindow";
             Text = "MyGarage";
@@ -148,6 +147,7 @@
         private Button button1;
         private Button button2;
         private Button button3;
+        private Button btnExport;
         private DataGridView dataGridView1;
         private DataGridView dataGridView2;
         private Label label1;

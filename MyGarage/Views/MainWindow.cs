@@ -34,6 +34,9 @@ namespace MyGarage.Views
                         MessageBoxButtons.OK, MessageBoxIcon.Warning));
             };
 
+            dataGridView2.SelectionChanged += dataGridView2_SelectionChanged;
+            btnExport.Click += btnExport_Click;
+
             _ = LoadVehiclesAsync();
         }
 
@@ -44,6 +47,9 @@ namespace MyGarage.Views
                 label3.Text = $"Version : {version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
 
             _maintenanceChecker.Start();
+
+            // ✅ Vérification des mises à jour en arrière-plan
+            _ = CheckForUpdatesAsync();
         }
 
         private async Task LoadVehiclesAsync()
@@ -99,14 +105,9 @@ namespace MyGarage.Views
         }
 
 
-        // TODO ; Réparer l'affichage
-        private async void dataGridView2_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        private async void dataGridView2_SelectionChanged(object? sender, EventArgs args)
         {
-            // Ignorer les clics sur l'en-tête
-            if (e.RowIndex < 0) return;
-
-            if (dataGridView2.Rows[e.RowIndex].DataBoundItem is not Vehicle selectedVehicle) return;
-
+            if (dataGridView2.CurrentRow?.DataBoundItem is not Vehicle selectedVehicle) return;
             if (selectedVehicle.Immatriculation is null) return;
 
             try
@@ -116,17 +117,15 @@ namespace MyGarage.Views
                 if (history == null || history.Historique == null || !history.Historique.Any())
                 {
                     dataGridView1.DataSource = null;
-                    dataGridView1.Rows.Clear();
                     return;
                 }
 
-                // Afficher les entretiens dans le dataGridView1 (panneau "Entretiens à venir")
-                var rows = history.Historique.Select(e => new
+                var rows = history.Historique.Select(ent => new
                 {
-                    Date = DateTime.TryParse(e.date_etretien, out var d) ? d.ToString("dd/MM/yyyy") : e.date_etretien,
-                    Type = e.type_entretien,
-                    Kilométrage = e.kilometrage?.ToString("N0") + " km",
-                    Coût = e.cout?.ToString("N2") + " €",
+                    Date = DateTime.TryParse(ent.date_etretien, out var d) ? d.ToString("dd/MM/yyyy") : ent.date_etretien,
+                    Type = ent.type_entretien,
+                    Kilométrage = ent.kilometrage?.ToString("N0") + " km",
+                    Coût = ent.cout?.ToString("N2") + " €",
                 }).ToList();
 
                 dataGridView1.DataSource = rows;
@@ -228,6 +227,109 @@ namespace MyGarage.Views
             {
                 MessageBox.Show($"Erreur : {ex.Message}", "Erreur",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Générer un rapport Excel pour les véhicules sélectionnés et l'envoyer par email/SMS
+        /// </summary>
+        private async void btnExport_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var config = AppConfig.Load();
+                var allVehicles = await _vehicleService.GetAllVehiclesAsync();
+
+                using var selectionForm = new ExportSelectionForm(allVehicles);
+                if (selectionForm.ShowDialog(this) != DialogResult.OK) return;
+
+                using var folderDialog = new FolderBrowserDialog
+                {
+                    Description = "Choisissez où enregistrer le rapport Excel"
+                };
+                if (folderDialog.ShowDialog(this) != DialogResult.OK) return;
+
+                var histories = new List<VehicleHistory>();
+                foreach (var vehicle in selectionForm.SelectedVehicles)
+                {
+                    if (vehicle.Immatriculation is null) continue;
+                    var history = await _vehicleService.GetHistVehicleAsync(vehicle.Immatriculation);
+                    if (history != null) histories.Add(history);
+                }
+
+                if (!histories.Any())
+                {
+                    MessageBox.Show("Aucun historique trouvé pour les véhicules sélectionnés.",
+                        "Aucune donnée", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var rapportService = new RapportService();
+                string filePath = rapportService.GenererRapport(histories, folderDialog.SelectedPath);
+
+                if (selectionForm.SendEmail)
+                {
+                    var notifService = new NotificationService();
+                    await notifService.SendEmailAsync(
+                        smtpHost: config.Smtp.Host,
+                        smtpPort: config.Smtp.Port,
+                        smtpUser: config.Smtp.User,
+                        smtpPassword: config.Smtp.Password,
+                        to: selectionForm.Email,
+                        subject: "Rapport MyGarage",
+                        body: "Veuillez trouver en pièce jointe votre rapport d'entretien MyGarage.",
+                        attachmentPath: filePath
+                    );
+                }
+
+                if (selectionForm.SendSms)
+                {
+                    var notifService = new NotificationService();
+                    await notifService.SendSmsAsync(
+                        userId: config.FreeMobile.UserId,
+                        apiKey: config.FreeMobile.ApiKey,
+                        message: $"MyGarage : rapport généré pour {selectionForm.SelectedVehicles.Count} véhicule(s)."
+                    );
+                }
+
+                MessageBox.Show($"Rapport généré avec succès !\n{filePath}",
+                    "Export terminé", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = filePath,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Erreur : {ex.Message}", "Erreur",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async Task CheckForUpdatesAsync()
+        {
+            try
+            {
+                var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+                if (currentVersion == null) return;
+
+                var updateService = new UpdateService();
+                var update = await updateService.CheckForUpdateAsync(currentVersion);
+
+                if (update == null) return;
+
+                // Retour sur le thread UI
+                this.Invoke(() =>
+                {
+                    using var form = new UpdateForm(update);
+                    form.ShowDialog(this);
+                });
+            }
+            catch
+            {
+                // Silencieux — pas de connexion internet ou GitHub indisponible
             }
         }
     }
