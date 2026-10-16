@@ -1,110 +1,97 @@
-﻿using Service.Services;
+using MyGarage.Controls;
+using MyGarage.Styles;
+using Service.Services;
 
 namespace MyGarage.Views
 {
-    public partial class UpdateForm : Form
+    public partial class UpdateForm : DialogBase
     {
         private readonly UpdateInfo _update;
-        private readonly UpdateService _updateService;
-        private ProgressBar progressBar = new ProgressBar();
-        private Label lblInfo = new Label();
-        private Label lblNotes = new Label();
-        private RichTextBox rtbNotes = new RichTextBox();
-        private Button btnUpdate = new Button();
-        private Button btnLater = new Button();
-        private Label lblProgress = new Label();
+        private readonly UpdateService _updateService = new();
+        private readonly RichTextBox rtbNotes = new();
+        private readonly Panel pnlProgress = new() { Height = S(40), Visible = false };
+        private readonly ThemedProgressBar progressBar = new();
+        private readonly ThemedLabel lblProgress = new() { Role = TextRole.Secondary, Font = AppTheme.FontSmall };
+        private ThemedButton btnUpdate = null!;
+        private ThemedButton btnLater = null!;
 
         public UpdateForm(UpdateInfo update)
         {
             InitializeComponent();
             _update = update;
-            _updateService = new UpdateService();
+            BuildUI();
+        }
 
-            this.Text = "Mise à jour disponible";
-            this.Size = new Size(500, 400);
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.MaximizeBox = false;
+        private void BuildUI()
+        {
+            SetHeader(Icons.Sync, "Mise à jour disponible",
+                $"Version {_update.CurrentVersion}  →  {_update.NewVersion}", accentSubtitle: true);
+            SetDialogWidth(540);
+            UseFieldColumns(1);
 
-            lblInfo.Text = $"Une nouvelle version est disponible !\n\nVersion actuelle : {update.CurrentVersion}\nNouvelle version : {update.NewVersion}";
-            lblInfo.Font = new Font("Segoe UI", 10F);
-            lblInfo.Location = new Point(12, 12);
-            lblInfo.Size = new Size(460, 70);
-
-            lblNotes.Text = "Notes de version :";
-            lblNotes.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            lblNotes.AutoSize = true;
-            lblNotes.Location = new Point(12, 90);
-
-            rtbNotes.Text = update.ReleaseNotes;
-            rtbNotes.Location = new Point(12, 112);
-            rtbNotes.Size = new Size(460, 150);
+            // Notes de version dans une carte
+            var notesCard = new CardPanel { Height = S(210), Padding = new Padding(S(14), S(12), S(6), S(12)) };
+            rtbNotes.Dock = DockStyle.Fill;
+            rtbNotes.BorderStyle = BorderStyle.None;
             rtbNotes.ReadOnly = true;
-            rtbNotes.BackColor = SystemColors.Window;
             rtbNotes.ScrollBars = RichTextBoxScrollBars.Vertical;
+            rtbNotes.Font = AppTheme.FontNormal;
+            rtbNotes.BackColor = AppTheme.Surface;
+            rtbNotes.ForeColor = AppTheme.TextPrimary;
+            rtbNotes.Text = _update.ReleaseNotes ?? "";
+            rtbNotes.HandleCreated += (s, e) => NativeTheme.ApplyScrollBars(rtbNotes);
+            notesCard.Controls.Add(rtbNotes);
+            AddField("Notes de version", notesCard);
 
-            progressBar.Location = new Point(12, 275);
-            progressBar.Size = new Size(460, 23);
-            progressBar.Visible = false;
+            // Progression (masquée tant que le téléchargement n'a pas commencé)
+            progressBar.Location = new Point(0, S(2));
+            progressBar.Width = S(200);
+            progressBar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblProgress.Location = new Point(0, S(16));
+            pnlProgress.Width = S(200);
+            pnlProgress.Controls.AddRange(new Control[] { progressBar, lblProgress });
+            AddField(null, pnlProgress, bottomGap: S(4));
 
-            lblProgress.Text = string.Empty;
-            lblProgress.AutoSize = true;
-            lblProgress.Location = new Point(12, 303);
-
-            btnUpdate.Text = "Télécharger et installer";
-            btnUpdate.Size = new Size(180, 35);
-            btnUpdate.Location = new Point(190, 325);
-            btnUpdate.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            btnUpdate.Click += BtnUpdate_Click;
-
-            btnLater.Text = "Plus tard";
-            btnLater.Size = new Size(100, 35);
-            btnLater.Location = new Point(382, 325);
-            btnLater.Click += (s, e) => this.Close();
-
-            this.Controls.AddRange(new Control[]
-            {
-                lblInfo, lblNotes, rtbNotes,
-                progressBar, lblProgress,
-                btnUpdate, btnLater
-            });
+            btnUpdate = AddFooterButton("Télécharger et installer", ButtonVariant.Primary, Icons.Download, BtnUpdate_Click);
+            btnLater = AddFooterButton("Plus tard", ButtonVariant.Secondary, null, (s, e) => Close());
+            AcceptButton = btnUpdate;
+            CancelButton = btnLater;
         }
 
         private async void BtnUpdate_Click(object? sender, EventArgs e)
         {
+            ClearError();
             btnUpdate.Enabled = false;
             btnLater.Enabled = false;
-            progressBar.Visible = true;
-            lblProgress.Text = "Téléchargement en cours...";
+            pnlProgress.Visible = true;
+            RefitHeight();
+            lblProgress.Text = "Téléchargement en cours…";
 
             try
             {
                 var progress = new Progress<int>(p =>
                 {
                     progressBar.Value = p;
-                    lblProgress.Text = $"Téléchargement : {p}%";
+                    lblProgress.Text = $"Téléchargement : {p} %";
                 });
 
                 string installerPath = await _updateService.DownloadUpdateAsync(_update, progress);
+                lblProgress.Text = "Lancement de l'installation…";
 
-                lblProgress.Text = "Lancement de l'installation...";
-
-                // Lancer le nouvel exe et fermer l'app actuelle
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = installerPath,
                     UseShellExecute = true
                 });
-
                 Application.Exit();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Erreur lors du téléchargement : {ex.Message}",
-                    "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowError($"Échec du téléchargement : {ex.Message}");
                 btnUpdate.Enabled = true;
                 btnLater.Enabled = true;
-                progressBar.Visible = false;
+                pnlProgress.Visible = false;
+                RefitHeight();
             }
         }
     }
