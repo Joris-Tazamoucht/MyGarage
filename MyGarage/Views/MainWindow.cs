@@ -1,6 +1,7 @@
 using BackgroundWorker;
 using Manager.Manager;
 using Models.Models;
+using MyGarage.Controls;
 using MyGarage.Styles;
 using Repository.Repository;
 using Service.Abstractions;
@@ -13,30 +14,38 @@ namespace MyGarage.Views
     {
         private readonly IVehicleService _vehicleService;
         private readonly MaintenanceCheckerService _maintenanceChecker;
+        private int _selectionVersion;
 
-        // ── Layout panels ─────────────────────────────────────────────────
-        private Panel pnlSideBar = new Panel();
-        private Panel pnlHeader = new Panel();
-        private Panel pnlContent = new Panel();
-        private Panel pnlVehicles = new Panel();
-        private Panel pnlEntretiens = new Panel();
+        private static int S(int value) => AppTheme.S(value);
 
-        // ── Header ────────────────────────────────────────────────────────
-        private Label lblAppTitle = new Label();
-        private Label lblVersion = new Label();
-        private ModernButton btnTheme = new ModernButton();
+        // ── Structure ─────────────────────────────────────────────────────
+        private readonly ThemedPanel pnlSideBar = new() { Role = SurfaceRole.SideBar, Edges = AnchorStyles.Right };
+        private readonly ThemedPanel pnlContent = new() { Role = SurfaceRole.Background };
 
-        // ── Sidebar ───────────────────────────────────────────────────────
-        private ModernButton btnAddVehicle = new ModernButton();
-        private ModernButton btnAddEntretien = new ModernButton();
-        private ModernButton btnHistory = new ModernButton();
-        private ModernButton btnExportBtn = new ModernButton(AppTheme.SuccessGreen, Color.FromArgb(30, 140, 70));
+        // ── Barre latérale ────────────────────────────────────────────────
+        private readonly ThemedLabel lblVersion = new() { Role = TextRole.Muted, Font = AppTheme.FontSmall };
+        private readonly ThemedButton btnDashboard = new() { Variant = ButtonVariant.Nav, Glyph = Icons.Home, Text = "Tableau de bord", Active = true };
+        private readonly ThemedButton btnExport = new() { Variant = ButtonVariant.Nav, Glyph = Icons.Document, Text = "Exporter un rapport" };
+        private readonly ThemedButton btnTheme = new() { Variant = ButtonVariant.Nav };
 
-        // ── Grilles ───────────────────────────────────────────────────────
-        private DataGridView dgvVehicles = new DataGridView();
-        private DataGridView dgvEntretiens = new DataGridView();
-        private Label lblVehiclesTitle = new Label();
-        private Label lblEntretiensTitle = new Label();
+        // ── Contenu ───────────────────────────────────────────────────────
+        private readonly ThemedButton btnAddVehicle = new() { Variant = ButtonVariant.Primary, Glyph = Icons.Add, Text = "Nouveau véhicule" };
+        private readonly ThemedButton btnAddEntretien = new() { Variant = ButtonVariant.Secondary, Glyph = Icons.Add, Text = "Ajouter" };
+        private readonly ThemedButton btnHistory = new() { Variant = ButtonVariant.Ghost, Glyph = Icons.History, Text = "Historique complet" };
+
+        private readonly StatCard statVehicles = new(Icons.Car, AppTheme.AccentBlue, "Véhicules");
+        private readonly StatCard statEntretiens = new(Icons.Repair, AppTheme.WarningOrange, "Entretiens");
+        private readonly StatCard statDepenses = new(Icons.Money, AppTheme.SuccessGreen, "Dépenses totales");
+        private readonly StatCard statDernier = new(Icons.Calendar, AppTheme.Purple, "Dernier entretien");
+
+        private readonly ThemedLabel lblVehiclesSub = new() { Role = TextRole.Muted, AutoSize = false, AutoEllipsis = true };
+        private readonly ThemedLabel lblEntretiensSub = new() { Role = TextRole.Muted, AutoSize = false, AutoEllipsis = true };
+        private readonly ThemedGrid dgvVehicles = new()
+        {
+            Dock = DockStyle.Fill,
+            EmptyText = "Aucun véhicule pour l'instant.\nCliquez sur « Nouveau véhicule » pour commencer."
+        };
+        private readonly ThemedGrid dgvEntretiens = new() { Dock = DockStyle.Fill };
 
         public MainWindow()
         {
@@ -57,184 +66,254 @@ namespace MyGarage.Views
             _maintenanceChecker = new MaintenanceCheckerService(manager, intervalMinutes: 60);
             _maintenanceChecker.MaintenanceAlert += msg =>
             {
-                if (this.IsHandleCreated)
-                    this.Invoke(() => MessageBox.Show(msg, "Entretien à prévoir",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning));
+                if (IsHandleCreated && !IsDisposed)
+                    BeginInvoke(new Action(() => MessageBox.Show(this, msg, "Entretien à prévoir",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning)));
             };
-
-            AppTheme.ThemeChanged += ApplyTheme;
-            _ = LoadVehiclesAsync();
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        //  Construction de l'interface
+        // ══════════════════════════════════════════════════════════════════
         private void BuildUI()
         {
-            this.Text = "MyGarage";
-            this.Size = new Size(1300, 700);
-            this.MinimumSize = new Size(900, 600);
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.FormBorderStyle = FormBorderStyle.Sizable;
-            this.Icon = new Icon(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "mygarage.ico"));
+            Text = "MyGarage";
+            Size = new Size(S(1320), S(800));
+            MinimumSize = new Size(S(1060), S(660));
+            StartPosition = FormStartPosition.CenterScreen;
+            FormBorderStyle = FormBorderStyle.Sizable;
 
-            // ── Header ────────────────────────────────────────────────────
-            pnlHeader.Dock = DockStyle.Top;
-            pnlHeader.Height = 60;
-            pnlHeader.Padding = new Padding(16, 0, 16, 0);
+            string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "mygarage.ico");
+            if (File.Exists(iconPath)) Icon = new Icon(iconPath);
 
-            lblAppTitle.Text = "🚗  MyGarage";
-            lblAppTitle.Font = AppTheme.FontTitle;
-            lblAppTitle.AutoSize = true;
-            lblAppTitle.Location = new Point(16, 16);
+            BuildSideBar();
+            BuildContent();
 
-            lblVersion.AutoSize = true;
-            lblVersion.Font = AppTheme.FontSmall;
-            lblVersion.Location = new Point(16, 40);
+            Controls.Add(pnlContent);
+            Controls.Add(pnlSideBar);
 
-            btnTheme.Text = "🌙  Dark";
-            btnTheme.Size = new Size(110, 34);
-            btnTheme.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+            dgvVehicles.AddPillColumn("Immatriculation", colored: false);
+            dgvEntretiens.AddPillColumn("Type", colored: true);
+            ShowNoSelection();
+            ApplyTheme();
+        }
 
-            pnlHeader.Controls.AddRange(new Control[] { lblAppTitle, lblVersion, btnTheme });
-
-            // ── Sidebar ───────────────────────────────────────────────────
+        private void BuildSideBar()
+        {
             pnlSideBar.Dock = DockStyle.Left;
-            pnlSideBar.Width = 200;
-            pnlSideBar.Padding = new Padding(12, 20, 12, 20);
+            pnlSideBar.Width = S(236);
+            pnlSideBar.Padding = new Padding(S(16), S(20), S(16), S(16));
 
-            var sideLabel = new Label
+            // Logo + nom + version
+            var brand = new Panel { Dock = DockStyle.Top, Height = S(52) };
+            var logo = new IconBadge { Glyph = Icons.Car, GlyphSize = 15f, Size = new Size(S(40), S(40)), Location = new Point(0, S(4)) };
+            var title = new ThemedLabel { Text = "MyGarage", Font = AppTheme.FontSubtitle, Location = new Point(S(52), S(4)) };
+            lblVersion.Location = new Point(S(53), S(27));
+            brand.Controls.AddRange(new Control[] { logo, title, lblVersion });
+
+            var menuLabel = new ThemedLabel
             {
-                Text = "ACTIONS",
-                Font = AppTheme.FontSmall,
-                AutoSize = true,
-                Location = new Point(12, 12)
+                Text = "MENU",
+                Role = TextRole.Muted,
+                Font = AppTheme.FontSmallBold,
+                AutoSize = false,
+                Dock = DockStyle.Top,
+                Height = S(46),
+                TextAlign = ContentAlignment.BottomLeft,
+                Padding = new Padding(S(4), 0, 0, S(8))
             };
 
-            btnAddVehicle.Text = "➕  Ajouter véhicule";
-            btnAddVehicle.Size = new Size(176, 42);
-            btnAddVehicle.Location = new Point(12, 40);
-
-            btnAddEntretien.Text = "🔧  Ajouter entretien";
-            btnAddEntretien.Size = new Size(176, 42);
-            btnAddEntretien.Location = new Point(12, 94);
-
-            btnHistory.Text = "📋  Historique";
-            btnHistory.Size = new Size(176, 42);
-            btnHistory.Location = new Point(12, 148);
-            btnHistory.SetBaseColor(Color.FromArgb(80, 80, 120), Color.FromArgb(60, 60, 100));
-
-            btnExportBtn.Text = "📊  Exporter rapport";
-            btnExportBtn.Size = new Size(176, 42);
-            btnExportBtn.Location = new Point(12, 202);
-
-            pnlSideBar.Controls.AddRange(new Control[]
+            var nav = new FlowLayoutPanel
             {
-                sideLabel, btnAddVehicle, btnAddEntretien, btnHistory, btnExportBtn
-            });
+                Dock = DockStyle.Top,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
+            };
+            foreach (var b in new[] { btnDashboard, btnExport })
+            {
+                b.Size = new Size(S(204), S(40));
+                b.Margin = new Padding(0, 0, 0, S(4));
+                nav.Controls.Add(b);
+            }
 
-            // ── Contenu principal ─────────────────────────────────────────
+            btnTheme.Dock = DockStyle.Bottom;
+            btnTheme.Height = S(40);
+
+            // Docking : le dernier ajouté se place en premier
+            pnlSideBar.Controls.Add(btnTheme);
+            pnlSideBar.Controls.Add(nav);
+            pnlSideBar.Controls.Add(menuLabel);
+            pnlSideBar.Controls.Add(brand);
+        }
+
+        private void BuildContent()
+        {
             pnlContent.Dock = DockStyle.Fill;
-            pnlContent.Padding = new Padding(16);
+            pnlContent.Padding = new Padding(S(28), S(24), S(28), S(24));
 
-            // Panel véhicules
-            pnlVehicles.Dock = DockStyle.Left;
-            pnlVehicles.Width = 550;
-            pnlVehicles.Padding = new Padding(0, 0, 12, 0);
+            var root = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, Margin = Padding.Empty };
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, S(78)));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, S(96 + 20)));
+            root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-            lblVehiclesTitle.Text = "🚗  Véhicules";
-            lblVehiclesTitle.Font = AppTheme.FontSubtitle;
-            lblVehiclesTitle.AutoSize = true;
-            lblVehiclesTitle.Dock = DockStyle.Top;
-            lblVehiclesTitle.Height = 30;
+            root.Controls.Add(BuildPageHeader(), 0, 0);
+            root.Controls.Add(BuildStatsRow(), 0, 1);
+            root.Controls.Add(BuildGridsRow(), 0, 2);
+            pnlContent.Controls.Add(root);
+        }
 
-            dgvVehicles.Dock = DockStyle.Fill;
-            AppTheme.ApplyToDataGridView(dgvVehicles);
+        private Control BuildPageHeader()
+        {
+            var panel = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
+            var title = new ThemedLabel { Text = "Tableau de bord", Font = AppTheme.FontTitle, Location = new Point(0, 0) };
+            var subtitle = new ThemedLabel
+            {
+                Text = "Suivez l'entretien et les dépenses de vos véhicules",
+                Role = TextRole.Secondary,
+                Location = new Point(S(1), S(36))
+            };
+            btnAddVehicle.Height = S(40);
+            btnAddVehicle.FitWidth();
+            panel.Controls.AddRange(new Control[] { title, subtitle, btnAddVehicle });
+            panel.Layout += (s, e) => btnAddVehicle.Location = new Point(panel.Width - btnAddVehicle.Width, S(4));
+            return panel;
+        }
 
-            pnlVehicles.Controls.Add(dgvVehicles);
-            pnlVehicles.Controls.Add(lblVehiclesTitle);
+        private Control BuildStatsRow()
+        {
+            var table = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 4,
+                RowCount = 1,
+                Margin = new Padding(0, 0, 0, S(20))
+            };
+            for (int i = 0; i < 4; i++) table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            table.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-            // Panel entretiens
-            pnlEntretiens.Dock = DockStyle.Fill;
-            pnlEntretiens.Padding = new Padding(12, 0, 0, 0);
+            var cards = new[] { statVehicles, statEntretiens, statDepenses, statDernier };
+            for (int i = 0; i < cards.Length; i++)
+            {
+                cards[i].Dock = DockStyle.Fill;
+                cards[i].Margin = new Padding(i == 0 ? 0 : S(8), 0, i == cards.Length - 1 ? 0 : S(8), 0);
+                table.Controls.Add(cards[i], i, 0);
+            }
+            return table;
+        }
 
-            lblEntretiensTitle.Text = "🔧  Entretiens récents";
-            lblEntretiensTitle.Font = AppTheme.FontSubtitle;
-            lblEntretiensTitle.AutoSize = true;
-            lblEntretiensTitle.Dock = DockStyle.Top;
-            lblEntretiensTitle.Height = 30;
+        private Control BuildGridsRow()
+        {
+            var table = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = Padding.Empty };
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 46));
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 54));
+            table.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-            dgvEntretiens.Dock = DockStyle.Fill;
-            AppTheme.ApplyToDataGridView(dgvEntretiens);
+            var vehiclesCard = BuildGridCard("Véhicules", lblVehiclesSub, dgvVehicles, Array.Empty<Control>());
+            vehiclesCard.Margin = new Padding(0, 0, S(10), 0);
 
-            pnlEntretiens.Controls.Add(dgvEntretiens);
-            pnlEntretiens.Controls.Add(lblEntretiensTitle);
+            btnAddEntretien.Height = S(34);
+            btnAddEntretien.FitWidth();
+            btnHistory.Height = S(34);
+            btnHistory.FitWidth();
+            var entretiensCard = BuildGridCard("Entretiens", lblEntretiensSub, dgvEntretiens, new Control[] { btnAddEntretien, btnHistory });
+            entretiensCard.Margin = new Padding(S(10), 0, 0, 0);
 
-            pnlContent.Controls.Add(pnlEntretiens);
-            pnlContent.Controls.Add(pnlVehicles);
+            table.Controls.Add(vehiclesCard, 0, 0);
+            table.Controls.Add(entretiensCard, 1, 0);
+            return table;
+        }
 
-            // ── Assemblage ────────────────────────────────────────────────
-            this.Controls.Add(pnlContent);
-            this.Controls.Add(pnlSideBar);
-            this.Controls.Add(pnlHeader);
+        /// <summary>Carte avec titre, sous-titre, boutons d'action à droite et une grille.</summary>
+        private static CardPanel BuildGridCard(string title, ThemedLabel subtitle, ThemedGrid grid, Control[] actions)
+        {
+            var card = new CardPanel { Dock = DockStyle.Fill, Padding = new Padding(S(18), S(16), S(18), S(12)) };
+            var header = new Panel { Dock = DockStyle.Top, Height = S(60) };
+            var lblTitle = new ThemedLabel { Text = title, Font = AppTheme.FontSubtitle, Location = new Point(0, 0) };
+            header.Controls.Add(lblTitle);
+            header.Controls.Add(subtitle);
+            foreach (var action in actions) header.Controls.Add(action);
 
-            ApplyTheme();
+            header.Layout += (s, e) =>
+            {
+                int x = header.Width;
+                foreach (var action in actions)   // le premier est le plus à droite
+                {
+                    x -= action.Width;
+                    action.Location = new Point(x, S(2));
+                    x -= S(8);
+                }
+                subtitle.SetBounds(S(1), S(25), Math.Max(10, x - S(8)), S(20));
+            };
+
+            card.Controls.Add(grid);
+            card.Controls.Add(header);
+            return card;
         }
 
         private void WireEvents()
         {
-            this.Load += MainWindow_Load;
-            btnTheme.Click += (s, e) => ToggleTheme();
-            btnAddVehicle.Click += button1_Click;
-            btnAddEntretien.Click += button2_Click;
-            btnHistory.Click += button3_Click;
-            btnExportBtn.Click += btnExport_Click;
-            dgvVehicles.SelectionChanged += dataGridView2_SelectionChanged;
+            Load += MainWindow_Load;
+            btnTheme.Click += (s, e) => AppTheme.Toggle();
+            btnDashboard.Click += async (s, e) => await LoadVehiclesAsync();
+            btnAddVehicle.Click += BtnAddVehicle_Click;
+            btnAddEntretien.Click += BtnAddEntretien_Click;
+            btnHistory.Click += BtnHistory_Click;
+            btnExport.Click += BtnExport_Click;
+            dgvVehicles.SelectionChanged += DgvVehicles_SelectionChanged;
+            dgvVehicles.CellDoubleClick += (s, e) => { if (e.RowIndex >= 0) BtnHistory_Click(s, e); };
+            dgvVehicles.DataBindingComplete += (s, e) => ConfigureVehicleColumns();
+            dgvEntretiens.DataBindingComplete += (s, e) => ConfigureEntretienColumns();
+            AppTheme.ThemeChanged += ApplyTheme;
         }
 
+        private void ConfigureVehicleColumns()
+        {
+            dgvVehicles.SetColumn("ID", visible: false);
+            dgvVehicles.SetColumn("Marque", "Marque");
+            dgvVehicles.SetColumn("Modele", "Modèle");
+            dgvVehicles.SetColumn("Immatriculation", "Immatriculation", fillWeight: 125);
+            dgvVehicles.SetColumn("Kilometrage", "Kilométrage", format: "#,##0' km'", alignRight: true);
+            dgvVehicles.SetColumn("Annee", "Année", alignRight: true, fillWeight: 60);
+        }
+
+        private void ConfigureEntretienColumns()
+        {
+            dgvEntretiens.SetColumn("Date", fillWeight: 80);
+            dgvEntretiens.SetColumn("Type", fillWeight: 100);
+            dgvEntretiens.SetColumn("Kilométrage", alignRight: true, fillWeight: 90);
+            dgvEntretiens.SetColumn("Coût", alignRight: true, fillWeight: 80);
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        //  Thème
+        // ══════════════════════════════════════════════════════════════════
         private void ApplyTheme()
         {
-            this.BackColor = AppTheme.Background;
-            pnlHeader.BackColor = AppTheme.Surface;
-            pnlSideBar.BackColor = AppTheme.SideBar;
-            pnlContent.BackColor = AppTheme.Background;
-            pnlVehicles.BackColor = AppTheme.Background;
-            pnlEntretiens.BackColor = AppTheme.Background;
-
-            lblAppTitle.ForeColor = AppTheme.TextPrimary;
-            lblAppTitle.BackColor = AppTheme.Surface;
-            lblVersion.ForeColor = AppTheme.TextSub;
-            lblVersion.BackColor = AppTheme.Surface;
-
-            lblVehiclesTitle.ForeColor = AppTheme.TextPrimary;
-            lblVehiclesTitle.BackColor = AppTheme.Background;
-            lblEntretiensTitle.ForeColor = AppTheme.TextPrimary;
-            lblEntretiensTitle.BackColor = AppTheme.Background;
-
-            foreach (Control c in pnlSideBar.Controls)
-                if (c is Label l) { l.ForeColor = AppTheme.TextSub; l.BackColor = AppTheme.SideBar; }
-
-            AppTheme.ApplyToDataGridView(dgvVehicles);
-            AppTheme.ApplyToDataGridView(dgvEntretiens);
-
-            btnTheme.Text = AppTheme.IsDark ? "☀️  Light" : "🌙  Dark";
-
-            // Repositionner btnTheme à droite
-            btnTheme.Location = new Point(pnlHeader.Width - btnTheme.Width - 16, 13);
-
-            this.Refresh();
+            BackColor = AppTheme.Background;
+            btnTheme.Text = AppTheme.IsDark ? "Mode clair" : "Mode sombre";
+            btnTheme.Glyph = AppTheme.IsDark ? Icons.Sun : Icons.Moon;
+            NativeTheme.ApplyTitleBar(this);
         }
 
-        private void ToggleTheme()
+        protected override void OnHandleCreated(EventArgs e)
         {
-            AppTheme.Toggle();
-            ApplyTheme();
+            base.OnHandleCreated(e);
+            NativeTheme.ApplyTitleBar(this);
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        //  Données
+        // ══════════════════════════════════════════════════════════════════
         private void MainWindow_Load(object? sender, EventArgs e)
         {
             var version = Assembly.GetExecutingAssembly().GetName().Version;
             if (version is not null)
-                lblVersion.Text = $"v{version.Major}.{version.Minor}.{version.Build}";
+                lblVersion.Text = $"Version {version.Major}.{version.Minor}.{version.Build}";
 
-            btnTheme.Location = new Point(pnlHeader.Width - btnTheme.Width - 16, 13);
+            _ = LoadVehiclesAsync();
             _maintenanceChecker.Start();
             _ = CheckForUpdatesAsync();
         }
@@ -244,93 +323,147 @@ namespace MyGarage.Views
             try
             {
                 var vehicles = await _vehicleService.GetAllVehiclesAsync();
+                int n = vehicles?.Count ?? 0;
                 dgvVehicles.DataSource = vehicles;
-                if (dgvVehicles.Columns["ID"] != null)
-                    dgvVehicles.Columns["ID"].Visible = false;
+
+                statVehicles.Value = n.ToString();
+                statVehicles.Detail = "dans votre garage";
+                lblVehiclesSub.Text = n switch { 0 => "Aucun véhicule", 1 => "1 véhicule", _ => $"{n} véhicules" };
+                if (n == 0) ShowNoSelection();
             }
-            catch (Exception ex)
+            catch (Exception ex) { ShowErrorBox(ex); }
+        }
+
+        private async void DgvVehicles_SelectionChanged(object? sender, EventArgs e)
+        {
+            if (dgvVehicles.CurrentRow?.DataBoundItem is not Vehicle vehicle || vehicle.Immatriculation is null)
             {
-                MessageBox.Show($"Erreur : {ex.Message}", "Erreur",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowNoSelection();
+                return;
+            }
+            await LoadEntretiensAsync(vehicle);
+        }
+
+        private async Task LoadEntretiensAsync(Vehicle vehicle)
+        {
+            int version = ++_selectionVersion;
+            try
+            {
+                var history = await _vehicleService.GetHistVehicleAsync(vehicle.Immatriculation!);
+                if (version != _selectionVersion) return;   // une sélection plus récente a pris le relais
+
+                var list = (history?.Historique ?? Enumerable.Empty<Entretien>())
+                    .OrderByDescending(ent => ParseDate(ent.date_etretien) ?? DateTime.MinValue)
+                    .ToList();
+
+                string vehicleName = $"{vehicle.Marque} {vehicle.Modele}".Trim();
+                lblEntretiensSub.Text = $"{vehicleName}  ·  {vehicle.Immatriculation}";
+                lblEntretiensSub.Role = TextRole.Accent;
+                dgvEntretiens.EmptyText = "Aucun entretien enregistré pour ce véhicule.";
+                dgvEntretiens.DataSource = list.Count == 0 ? null : list.Select(ent => new
+                {
+                    Date = ParseDate(ent.date_etretien)?.ToString("dd/MM/yyyy") ?? ent.date_etretien,
+                    Type = ent.type_entretien,
+                    Kilométrage = ent.kilometrage?.ToString("N0") + " km",
+                    Coût = ent.cout?.ToString("N2") + " €",
+                }).ToList();
+
+                float total = list.Sum(ent => ent.cout ?? 0);
+                var last = list.Select(ent => ParseDate(ent.date_etretien)).FirstOrDefault(d => d.HasValue);
+
+                statEntretiens.Value = list.Count.ToString();
+                statDepenses.Value = $"{total:N2} €";
+                statDernier.Value = last?.ToString("dd/MM/yyyy") ?? "—";
+                statEntretiens.Detail = statDepenses.Detail = statDernier.Detail = vehicleName;
+            }
+            catch (Exception ex) { ShowErrorBox(ex); }
+        }
+
+        private void ShowNoSelection()
+        {
+            _selectionVersion++;
+            dgvEntretiens.DataSource = null;
+            dgvEntretiens.EmptyText = "Sélectionnez un véhicule pour voir ses entretiens.";
+            lblEntretiensSub.Text = "Aucun véhicule sélectionné";
+            lblEntretiensSub.Role = TextRole.Muted;
+            foreach (var card in new[] { statEntretiens, statDepenses, statDernier })
+            {
+                card.Value = "—";
+                card.Detail = "";
             }
         }
 
-        private async void button1_Click(object sender, EventArgs e)
+        private static DateTime? ParseDate(string? text) => DateTime.TryParse(text, out var d) ? d : null;
+
+        private Vehicle? SelectedVehicleOrWarn()
+        {
+            if (dgvVehicles.CurrentRow?.DataBoundItem is Vehicle v) return v;
+            MessageBox.Show(this, "Veuillez sélectionner un véhicule.", "Aucun véhicule",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return null;
+        }
+
+        private void ShowErrorBox(Exception ex)
+            => MessageBox.Show(this, $"Erreur : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+        // ══════════════════════════════════════════════════════════════════
+        //  Actions
+        // ══════════════════════════════════════════════════════════════════
+        private async void BtnAddVehicle_Click(object? sender, EventArgs e)
         {
             using var form = new AddVehicleForm();
             if (form.ShowDialog(this) != DialogResult.OK || form.Vehicle == null) return;
             try
             {
                 var added = await _vehicleService.AddVehicleAsync(form.Vehicle);
-                if (added == null) { MessageBox.Show("Erreur lors de l'ajout.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
-                MessageBox.Show($"{added.Marque} {added.Modele} ajouté !", "Succès", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (added == null)
+                {
+                    MessageBox.Show(this, "Erreur lors de l'ajout.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
                 await LoadVehiclesAsync();
             }
-            catch (Exception ex) { MessageBox.Show($"Erreur : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { ShowErrorBox(ex); }
         }
 
-        private async void button2_Click(object sender, EventArgs e)
+        private async void BtnAddEntretien_Click(object? sender, EventArgs e)
         {
-            if (dgvVehicles.CurrentRow?.DataBoundItem is not Vehicle selectedVehicle)
-            {
-                MessageBox.Show("Veuillez sélectionner un véhicule.", "Aucun véhicule", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            string vehicleLabel = $"{selectedVehicle.Marque} {selectedVehicle.Modele} ({selectedVehicle.Immatriculation})";
-            using var form = new AddEntretienForm(selectedVehicle.ID, vehicleLabel);
+            if (SelectedVehicleOrWarn() is not Vehicle vehicle) return;
+
+            string label = $"{vehicle.Marque} {vehicle.Modele}  ·  {vehicle.Immatriculation}";
+            using var form = new AddEntretienForm(vehicle.ID, label);
             if (form.ShowDialog(this) != DialogResult.OK || form.Entretien == null) return;
             try
             {
                 var added = await _vehicleService.AddEntretienAsync(form.Entretien);
-                if (added == null) { MessageBox.Show("Erreur lors de l'ajout.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
-                MessageBox.Show($"Entretien '{added.type_entretien}' ajouté !", "Succès", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (added == null)
+                {
+                    MessageBox.Show(this, "Erreur lors de l'ajout.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                await LoadEntretiensAsync(vehicle);   // la liste se met à jour tout de suite
             }
-            catch (Exception ex) { MessageBox.Show($"Erreur : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { ShowErrorBox(ex); }
         }
 
-        private async void button3_Click(object sender, EventArgs e)
+        private async void BtnHistory_Click(object? sender, EventArgs e)
         {
-            if (dgvVehicles.CurrentRow?.DataBoundItem is not Vehicle selectedVehicle)
-            {
-                MessageBox.Show("Veuillez sélectionner un véhicule.", "Aucun véhicule", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            if (selectedVehicle.Immatriculation is null) return;
+            if (SelectedVehicleOrWarn() is not Vehicle vehicle || vehicle.Immatriculation is null) return;
             try
             {
-                var history = await _vehicleService.GetHistVehicleAsync(selectedVehicle.Immatriculation);
-                if (history == null) { MessageBox.Show("Aucun historique trouvé.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+                var history = await _vehicleService.GetHistVehicleAsync(vehicle.Immatriculation);
+                if (history == null)
+                {
+                    MessageBox.Show(this, "Aucun historique trouvé.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
                 using var form = new VehicleHistoryForm(history);
                 form.ShowDialog(this);
             }
-            catch (Exception ex) { MessageBox.Show($"Erreur : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { ShowErrorBox(ex); }
         }
 
-        private async void dataGridView2_SelectionChanged(object? sender, EventArgs args)
-        {
-            if (dgvVehicles.CurrentRow?.DataBoundItem is not Vehicle selectedVehicle) return;
-            if (selectedVehicle.Immatriculation is null) return;
-            try
-            {
-                var history = await _vehicleService.GetHistVehicleAsync(selectedVehicle.Immatriculation);
-                if (history == null || history.Historique == null || !history.Historique.Any())
-                {
-                    dgvEntretiens.DataSource = null;
-                    return;
-                }
-                var rows = history.Historique.Select(ent => new
-                {
-                    Date = DateTime.TryParse(ent.date_etretien, out var d) ? d.ToString("dd/MM/yyyy") : ent.date_etretien,
-                    Type = ent.type_entretien,
-                    Kilométrage = ent.kilometrage?.ToString("N0") + " km",
-                    Coût = ent.cout?.ToString("N2") + " €",
-                }).ToList();
-                dgvEntretiens.DataSource = rows;
-            }
-            catch (Exception ex) { MessageBox.Show($"Erreur : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-        }
-
-        private async void btnExport_Click(object sender, EventArgs e)
+        private async void BtnExport_Click(object? sender, EventArgs e)
         {
             try
             {
@@ -338,8 +471,11 @@ namespace MyGarage.Views
                 var allVehicles = await _vehicleService.GetAllVehiclesAsync();
                 using var selectionForm = new ExportSelectionForm(allVehicles);
                 if (selectionForm.ShowDialog(this) != DialogResult.OK) return;
+
                 using var folderDialog = new FolderBrowserDialog { Description = "Choisissez où enregistrer le rapport Excel" };
                 if (folderDialog.ShowDialog(this) != DialogResult.OK) return;
+
+                UseWaitCursor = true;
                 var histories = new List<VehicleHistory>();
                 foreach (var vehicle in selectionForm.SelectedVehicles)
                 {
@@ -347,23 +483,37 @@ namespace MyGarage.Views
                     var history = await _vehicleService.GetHistVehicleAsync(vehicle.Immatriculation);
                     if (history != null) histories.Add(history);
                 }
-                if (!histories.Any()) { MessageBox.Show("Aucun historique trouvé.", "Aucune donnée", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+                if (!histories.Any())
+                {
+                    UseWaitCursor = false;
+                    MessageBox.Show(this, "Aucun historique trouvé.", "Aucune donnée", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 var rapportService = new RapportService();
                 string filePath = rapportService.GenererRapport(histories, folderDialog.SelectedPath);
+
                 if (selectionForm.SendEmail)
                 {
                     var notifService = new NotificationService();
-                    await notifService.SendEmailAsync(config.Smtp.Host, config.Smtp.Port, config.Smtp.User, config.Smtp.Password, selectionForm.Email, "Rapport MyGarage", "Veuillez trouver en pièce jointe votre rapport.", filePath);
+                    await notifService.SendEmailAsync(config.Smtp.Host, config.Smtp.Port, config.Smtp.User, config.Smtp.Password,
+                        selectionForm.Email, "Rapport MyGarage", "Veuillez trouver en pièce jointe votre rapport.", filePath);
                 }
                 if (selectionForm.SendSms)
                 {
                     var notifService = new NotificationService();
-                    await notifService.SendSmsAsync(config.FreeMobile.UserId, config.FreeMobile.ApiKey, $"MyGarage : rapport généré pour {selectionForm.SelectedVehicles.Count} véhicule(s).");
+                    await notifService.SendSmsAsync(config.FreeMobile.UserId, config.FreeMobile.ApiKey,
+                        $"MyGarage : rapport généré pour {selectionForm.SelectedVehicles.Count} véhicule(s).");
                 }
-                MessageBox.Show($"Rapport généré !\n{filePath}", "Export terminé", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                UseWaitCursor = false;
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = filePath, UseShellExecute = true });
             }
-            catch (Exception ex) { MessageBox.Show($"Erreur : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex)
+            {
+                UseWaitCursor = false;
+                ShowErrorBox(ex);
+            }
         }
 
         private async Task CheckForUpdatesAsync()
@@ -373,40 +523,24 @@ namespace MyGarage.Views
                 var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
                 if (currentVersion == null) return;
 
-                var updateService = new UpdateService();
-                var update = await updateService.CheckForUpdateAsync(currentVersion);
+                var update = await new UpdateService().CheckForUpdateAsync(currentVersion);
+                if (update == null || IsDisposed) return;
 
-                // Debug temporaire
-                this.Invoke(() =>
-                {
-                    MessageBox.Show(
-                        $"Version actuelle : {currentVersion}\n" +
-                        $"Update trouvé : {update != null}\n" +
-                        $"Nouvelle version : {update?.NewVersion ?? "aucune"}",
-                        "Debug update");
-                });
-
-                if (update == null) return;
-
-                this.Invoke(() => { using var form = new UpdateForm(update); form.ShowDialog(this); });
+                using var form = new UpdateForm(update);
+                form.ShowDialog(this);
             }
             catch (Exception ex)
             {
-                // Afficher l'erreur au lieu de l'ignorer
-                this.Invoke(() => MessageBox.Show($"Erreur update : {ex.Message}", "Debug erreur"));
+                // Pas de fenêtre d'erreur : un échec réseau au démarrage ne doit pas gêner l'utilisateur
+                System.Diagnostics.Debug.WriteLine($"Vérification des mises à jour impossible : {ex.Message}");
             }
         }
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            _maintenanceChecker?.Dispose();
-            base.OnFormClosing(e);
-        }
 
-        protected override void OnResize(EventArgs e)
+        protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            base.OnResize(e);
-            if (btnTheme != null && pnlHeader != null)
-                btnTheme.Location = new Point(pnlHeader.Width - btnTheme.Width - 16, 13);
+            AppTheme.ThemeChanged -= ApplyTheme;
+            _maintenanceChecker?.Dispose();
+            base.OnFormClosed(e);
         }
     }
 }

@@ -1,149 +1,224 @@
-﻿namespace MyGarage.Styles
+using System.Drawing.Drawing2D;
+using System.Drawing.Text;
+
+namespace MyGarage.Styles
 {
+    /// <summary>Rôle d'une surface : détermine sa couleur de fond selon le thème.</summary>
+    public enum SurfaceRole { Background, Surface, SurfaceAlt, SideBar }
+
+    /// <summary>Rôle d'un texte : détermine sa couleur selon le thème.</summary>
+    public enum TextRole { Primary, Secondary, Muted, Accent, Danger }
+
     public static class AppTheme
     {
+        // ── État ──────────────────────────────────────────────────────────
         public static bool IsDark { get; private set; } = true;
+        public static event Action? ThemeChanged;
 
-        // ── Couleurs Dark ─────────────────────────────────────────────────
-        private static readonly Color DarkBackground = Color.FromArgb(18, 18, 24);
-        private static readonly Color DarkSurface = Color.FromArgb(28, 28, 38);
-        private static readonly Color DarkSideBar = Color.FromArgb(22, 22, 32);
-        private static readonly Color DarkText = Color.FromArgb(230, 230, 240);
-        private static readonly Color DarkSubText = Color.FromArgb(140, 140, 160);
-        private static readonly Color DarkBorder = Color.FromArgb(45, 45, 60);
-        private static readonly Color DarkGridAlt = Color.FromArgb(32, 32, 44);
-        private static readonly Color DarkGridSel = Color.FromArgb(50, 80, 140);
+        private static readonly string PreferencePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MyGarage", "theme.txt");
 
-        // ── Couleurs Light ────────────────────────────────────────────────
-        private static readonly Color LightBackground = Color.FromArgb(245, 247, 252);
-        private static readonly Color LightSurface = Color.FromArgb(255, 255, 255);
-        private static readonly Color LightSideBar = Color.FromArgb(235, 238, 248);
-        private static readonly Color LightText = Color.FromArgb(20, 20, 40);
-        private static readonly Color LightSubText = Color.FromArgb(100, 100, 130);
-        private static readonly Color LightBorder = Color.FromArgb(210, 215, 230);
-        private static readonly Color LightGridAlt = Color.FromArgb(240, 243, 252);
-        private static readonly Color LightGridSel = Color.FromArgb(180, 200, 240);
+        // ── Palettes ──────────────────────────────────────────────────────
+        private sealed record Palette(
+            Color Background, Color Surface, Color SurfaceAlt, Color SideBar,
+            Color Text, Color TextSub, Color TextMuted,
+            Color Border, Color BorderStrong, Color InputBack, Color Hover,
+            Color GridSel, Color GridSelText, Color AccentSoft, Color AccentText);
+
+        private static readonly Palette Dark = new(
+            Background: Color.FromArgb(15, 17, 23),
+            Surface: Color.FromArgb(23, 26, 35),
+            SurfaceAlt: Color.FromArgb(30, 34, 45),
+            SideBar: Color.FromArgb(19, 21, 29),
+            Text: Color.FromArgb(234, 236, 243),
+            TextSub: Color.FromArgb(152, 158, 178),
+            TextMuted: Color.FromArgb(104, 110, 130),
+            Border: Color.FromArgb(40, 45, 58),
+            BorderStrong: Color.FromArgb(64, 70, 88),
+            InputBack: Color.FromArgb(17, 19, 26),
+            Hover: Color.FromArgb(35, 39, 52),
+            GridSel: Color.FromArgb(33, 52, 92),
+            GridSelText: Color.FromArgb(240, 244, 255),
+            AccentSoft: Color.FromArgb(30, 46, 82),
+            AccentText: Color.FromArgb(125, 170, 255));
+
+        private static readonly Palette Light = new(
+            Background: Color.FromArgb(243, 245, 250),
+            Surface: Color.White,
+            SurfaceAlt: Color.FromArgb(247, 248, 252),
+            SideBar: Color.White,
+            Text: Color.FromArgb(21, 25, 39),
+            TextSub: Color.FromArgb(92, 99, 122),
+            TextMuted: Color.FromArgb(142, 148, 168),
+            Border: Color.FromArgb(223, 227, 237),
+            BorderStrong: Color.FromArgb(196, 202, 218),
+            InputBack: Color.White,
+            Hover: Color.FromArgb(239, 242, 249),
+            GridSel: Color.FromArgb(225, 235, 255),
+            GridSelText: Color.FromArgb(21, 25, 39),
+            AccentSoft: Color.FromArgb(232, 240, 255),
+            AccentText: Color.FromArgb(37, 92, 200));
+
+        private static Palette P => IsDark ? Dark : Light;
 
         // ── Couleurs communes ─────────────────────────────────────────────
-        public static readonly Color AccentBlue = Color.FromArgb(60, 120, 220);
-        public static readonly Color AccentBlueDark = Color.FromArgb(40, 90, 180);
-        public static readonly Color AccentBlueLight = Color.FromArgb(100, 160, 255);
-        public static readonly Color DangerRed = Color.FromArgb(220, 60, 60);
-        public static readonly Color SuccessGreen = Color.FromArgb(50, 180, 100);
-        public static readonly Color WarningOrange = Color.FromArgb(220, 140, 40);
+        public static readonly Color AccentBlue = Color.FromArgb(64, 124, 236);
+        public static readonly Color AccentBlueDark = Color.FromArgb(50, 104, 212);   // survol
+        public static readonly Color AccentPressed = Color.FromArgb(40, 88, 190);
+        public static readonly Color AccentBlueLight = Color.FromArgb(125, 170, 255);
+        public static readonly Color DangerRed = Color.FromArgb(224, 72, 72);
+        public static readonly Color DangerHover = Color.FromArgb(200, 56, 56);
+        public static readonly Color SuccessGreen = Color.FromArgb(34, 168, 98);
+        public static readonly Color SuccessHover = Color.FromArgb(26, 144, 82);
+        public static readonly Color WarningOrange = Color.FromArgb(232, 142, 44);
+        public static readonly Color Purple = Color.FromArgb(139, 92, 246);
 
         // ── Accesseurs dynamiques ─────────────────────────────────────────
-        public static Color Background => IsDark ? DarkBackground : LightBackground;
-        public static Color Surface => IsDark ? DarkSurface : LightSurface;
-        public static Color SideBar => IsDark ? DarkSideBar : LightSideBar;
-        public static Color TextPrimary => IsDark ? DarkText : LightText;
-        public static Color TextSub => IsDark ? DarkSubText : LightSubText;
-        public static Color Border => IsDark ? DarkBorder : LightBorder;
-        public static Color GridAlt => IsDark ? DarkGridAlt : LightGridAlt;
-        public static Color GridSel => IsDark ? DarkGridSel : LightGridSel;
+        public static Color Background => P.Background;
+        public static Color Surface => P.Surface;
+        public static Color SurfaceAlt => P.SurfaceAlt;
+        public static Color SideBar => P.SideBar;
+        public static Color TextPrimary => P.Text;
+        public static Color TextSub => P.TextSub;
+        public static Color TextMuted => P.TextMuted;
+        public static Color Border => P.Border;
+        public static Color BorderStrong => P.BorderStrong;
+        public static Color InputBack => P.InputBack;
+        public static Color Hover => P.Hover;
+        public static Color GridSel => P.GridSel;
+        public static Color GridSelText => P.GridSelText;
+        public static Color GridAlt => P.SurfaceAlt;
+        public static Color AccentSoft => P.AccentSoft;
+        public static Color AccentText => P.AccentText;
 
-        public static Font FontTitle => new Font("Segoe UI", 14F, FontStyle.Bold);
-        public static Font FontSubtitle => new Font("Segoe UI", 10F, FontStyle.Bold);
-        public static Font FontNormal => new Font("Segoe UI", 9F);
-        public static Font FontSmall => new Font("Segoe UI", 8F);
-        public static Font FontButton => new Font("Segoe UI", 10F, FontStyle.Bold);
+        public static Color SurfaceColor(SurfaceRole role) => role switch
+        {
+            SurfaceRole.Surface => Surface,
+            SurfaceRole.SurfaceAlt => SurfaceAlt,
+            SurfaceRole.SideBar => SideBar,
+            _ => Background
+        };
 
-        public static event Action? ThemeChanged;
+        public static Color TextColor(TextRole role) => role switch
+        {
+            TextRole.Secondary => TextSub,
+            TextRole.Muted => TextMuted,
+            TextRole.Accent => AccentText,
+            TextRole.Danger => DangerRed,
+            _ => TextPrimary
+        };
+
+        // ── Polices (créées une seule fois, jamais recréées) ──────────────
+        public static readonly Font FontTitle = new("Segoe UI Semibold", 15F);
+        public static readonly Font FontSubtitle = new("Segoe UI Semibold", 11F);
+        public static readonly Font FontNormal = new("Segoe UI", 9.75F);
+        public static readonly Font FontMedium = new("Segoe UI Semibold", 9.75F);
+        public static readonly Font FontSmall = new("Segoe UI", 8.25F);
+        public static readonly Font FontSmallBold = new("Segoe UI Semibold", 8.25F);
+        public static readonly Font FontButton = new("Segoe UI Semibold", 9.75F);
+        public static readonly Font FontStat = new("Segoe UI Semibold", 16F);
+
+        // Icônes : Segoe Fluent Icons (Windows 11) ou Segoe MDL2 Assets (Windows 10)
+        private static readonly string IconFamily = ResolveIconFamily();
+        private static readonly Dictionary<float, Font> IconFonts = new();
+
+        public static Font IconFont(float size)
+        {
+            lock (IconFonts)
+            {
+                if (!IconFonts.TryGetValue(size, out var font))
+                {
+                    font = new Font(IconFamily, size);
+                    IconFonts[size] = font;
+                }
+                return font;
+            }
+        }
+
+        private static string ResolveIconFamily()
+        {
+            try
+            {
+                using var fonts = new InstalledFontCollection();
+                if (fonts.Families.Any(f => f.Name == "Segoe Fluent Icons"))
+                    return "Segoe Fluent Icons";
+            }
+            catch { }
+            return "Segoe MDL2 Assets";
+        }
+
+        // ── Mise à l'échelle DPI ──────────────────────────────────────────
+        public static float ScaleFactor { get; } = ComputeScale();
+
+        private static float ComputeScale()
+        {
+            try
+            {
+                using var g = Graphics.FromHwnd(IntPtr.Zero);
+                return g.DpiX / 96f;
+            }
+            catch { return 1f; }
+        }
+
+        /// <summary>Convertit une taille pensée à 100 % en pixels réels.</summary>
+        public static int S(int value) => (int)Math.Round(value * ScaleFactor);
+
+        // ── Bascule et persistance ────────────────────────────────────────
+        static AppTheme()
+        {
+            try
+            {
+                if (File.Exists(PreferencePath))
+                    IsDark = File.ReadAllText(PreferencePath).Trim() != "light";
+            }
+            catch { }
+        }
 
         public static void Toggle()
         {
             IsDark = !IsDark;
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(PreferencePath)!);
+                File.WriteAllText(PreferencePath, IsDark ? "dark" : "light");
+            }
+            catch { }
             ThemeChanged?.Invoke();
         }
 
-        // ── Helpers d'application du thème ───────────────────────────────
-        public static void ApplyToDataGridView(DataGridView dgv)
+        // ── Outils de dessin ──────────────────────────────────────────────
+        public static Color Blend(Color from, Color to, float amount)
         {
-            dgv.BackgroundColor = Surface;
-            dgv.GridColor = Border;
-            dgv.BorderStyle = BorderStyle.None;
-            dgv.DefaultCellStyle.BackColor = Surface;
-            dgv.DefaultCellStyle.ForeColor = TextPrimary;
-            dgv.DefaultCellStyle.Font = FontNormal;
-            dgv.DefaultCellStyle.SelectionBackColor = GridSel;
-            dgv.DefaultCellStyle.SelectionForeColor = Color.White;
-            dgv.AlternatingRowsDefaultCellStyle.BackColor = GridAlt;
-            dgv.AlternatingRowsDefaultCellStyle.ForeColor = TextPrimary;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = AccentBlue;
-            dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-            dgv.ColumnHeadersDefaultCellStyle.Font = FontSubtitle;
-            dgv.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dgv.ColumnHeadersDefaultCellStyle.Padding = new Padding(8, 8, 8, 8);
-            dgv.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-            dgv.ColumnHeadersHeight = 40;  // ← hauteur fixe en pixels
-            dgv.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            dgv.EnableHeadersVisualStyles = false;
-            dgv.RowHeadersVisible = false;
-            dgv.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
-            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgv.ReadOnly = true;
-            dgv.AllowUserToAddRows = false;
-            dgv.AllowUserToDeleteRows = false;
-            dgv.RowTemplate.Height = 32;
-            dgv.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dgv.AlternatingRowsDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            amount = Math.Clamp(amount, 0f, 1f);
+            return Color.FromArgb(
+                (int)Math.Round(from.R + (to.R - from.R) * amount),
+                (int)Math.Round(from.G + (to.G - from.G) * amount),
+                (int)Math.Round(from.B + (to.B - from.B) * amount));
         }
 
-        public static void ApplyToForm(Form form)
+        public static GraphicsPath RoundedRect(RectangleF r, float radius)
         {
-            form.BackColor = Background;
-            form.ForeColor = TextPrimary;
-            ApplyToControls(form.Controls);
-        }
-
-        public static void ApplyToControls(Control.ControlCollection controls)
-        {
-            foreach (Control c in controls)
+            var path = new GraphicsPath();
+            float d = Math.Min(radius * 2, Math.Min(r.Width, r.Height));
+            if (d <= 0)
             {
-                switch (c)
-                {
-                    case Panel p:
-                        p.BackColor = Surface;
-                        ApplyToControls(p.Controls);
-                        break;
-                    case Label l:
-                        l.ForeColor = TextPrimary;
-                        l.BackColor = Color.Transparent;
-                        break;
-                    case TextBox t:
-                        t.BackColor = Background;
-                        t.ForeColor = TextPrimary;
-                        t.BorderStyle = BorderStyle.FixedSingle;
-                        break;
-                    case ComboBox cb:
-                        cb.BackColor = Background;
-                        cb.ForeColor = TextPrimary;
-                        cb.FlatStyle = FlatStyle.Flat;
-                        break;
-                    case CheckBox chk:
-                        chk.ForeColor = TextPrimary;
-                        chk.BackColor = Color.Transparent;
-                        break;
-                    case CheckedListBox clb:
-                        clb.BackColor = Background;
-                        clb.ForeColor = TextPrimary;
-                        clb.BorderStyle = BorderStyle.FixedSingle;
-                        break;
-                    case RichTextBox rtb:
-                        rtb.BackColor = Background;
-                        rtb.ForeColor = TextPrimary;
-                        rtb.BorderStyle = BorderStyle.FixedSingle;
-                        break;
-                    case DateTimePicker dtp:
-                        dtp.CalendarForeColor = TextPrimary;
-                        dtp.CalendarMonthBackground = Background;
-                        break;
-                    case DataGridView dgv:
-                        ApplyToDataGridView(dgv);
-                        break;
-                }
+                path.AddRectangle(r);
+                return path;
             }
+            path.AddArc(r.X, r.Y, d, d, 180, 90);
+            path.AddArc(r.Right - d, r.Y, d, d, 270, 90);
+            path.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
+            path.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            return path;
+        }
+
+        /// <summary>Première couleur de fond opaque en remontant les parents.</summary>
+        public static Color ResolveBackColor(Control control)
+        {
+            for (var p = control.Parent; p != null; p = p.Parent)
+                if (p.BackColor.A == 255) return p.BackColor;
+            return Background;
         }
     }
 }

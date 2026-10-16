@@ -1,4 +1,4 @@
-﻿namespace MyGarage.Views
+namespace MyGarage.Views
 {
     partial class ExportSelectionForm
     {
@@ -15,16 +15,12 @@
 
         private void InitializeComponent()
         {
-            SuspendLayout();
-            // 
-            // ExportSelectionForm
-            // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
-            AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(582, 553);
-            Name = "ExportSelectionForm";
-            Text = "Exporter un rapport";
-            ResumeLayout(false);
+            // AutoScaleDimensions retiré : il réduisait toute la fenêtre de 25 %
+            // sur les écrans à 100 %. La mise à l'échelle est gérée par AppTheme.S().
+            this.components = new System.ComponentModel.Container();
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(520, 560);
+            this.Text = "Exporter un rapport";
         }
 
         #endregion

@@ -1,25 +1,24 @@
-﻿using Models.Models;
+using Models.Models;
+using MyGarage.Controls;
 using MyGarage.Styles;
 
 namespace MyGarage.Views
 {
-    public partial class AddEntretienForm : Form
+    public partial class AddEntretienForm : DialogBase
     {
+        private static readonly string[] Types =
+        {
+            "Vidange", "Révision", "Freins", "Pneus", "Courroie",
+            "Filtres", "Batterie", "Amortisseurs", "Autre"
+        };
+
         private readonly int _vehicleId;
-        private Panel pnlHeader = new Panel();
-        private Panel pnlContent = new Panel();
-        private Panel pnlFooter = new Panel();
-        private Label lblTitle = new Label();
-        private Label lblSubtitle = new Label();
-
-        private DateTimePicker dtpDate = new DateTimePicker();
-        private ComboBox cboType = new ComboBox();
-        private TextBox txtKilometrage = new TextBox();
-        private TextBox txtCout = new TextBox();
-        private TextBox txtNotes = new TextBox();
-
-        private ModernButton btnConfirm = new ModernButton();
-        private ModernButton btnCancel = new ModernButton(Color.FromArgb(80, 80, 100), Color.FromArgb(60, 60, 80));
+        private readonly InputBox txtType = new() { PlaceholderText = "Choisissez ci-dessous ou saisissez un type" };
+        private readonly ChipSelector chipsType = new(Types);
+        private readonly DateField dtDate = new();
+        private readonly InputBox txtKilometrage = new() { PlaceholderText = "ex. 92 500" };
+        private readonly InputBox txtCout = new() { PlaceholderText = "ex. 149,90" };
+        private readonly InputBox txtNotes = new() { Multiline = true, PlaceholderText = "Pièces changées, garage, remarques…" };
 
         public Entretien? Entretien { get; private set; }
 
@@ -28,146 +27,64 @@ namespace MyGarage.Views
             InitializeComponent();
             _vehicleId = vehicleId;
             BuildUI(vehicleLabel);
-            AppTheme.ThemeChanged += () => AppTheme.ApplyToForm(this);
         }
 
         private void BuildUI(string vehicleLabel)
         {
-            this.Text = "Ajouter un entretien";
-            this.Size = new Size(460, 540);
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.MaximizeBox = false;
-            this.BackColor = AppTheme.Background;
+            SetHeader(Icons.Repair, "Nouvel entretien", vehicleLabel, AppTheme.WarningOrange, accentSubtitle: true);
+            SetDialogWidth(540);
+            UseFieldColumns(3);
 
-            // ── Header ────────────────────────────────────────────────────
-            pnlHeader.Dock = DockStyle.Top;
-            pnlHeader.Height = 70;
-            pnlHeader.BackColor = AppTheme.Surface;
-
-            lblTitle.Text = "🔧  Ajouter un entretien";
-            lblTitle.Font = AppTheme.FontTitle;
-            lblTitle.ForeColor = AppTheme.TextPrimary;
-            lblTitle.BackColor = AppTheme.Surface;
-            lblTitle.AutoSize = true;
-            lblTitle.Location = new Point(20, 12);
-
-            lblSubtitle.Text = vehicleLabel;
-            lblSubtitle.Font = AppTheme.FontSmall;
-            lblSubtitle.ForeColor = AppTheme.AccentBlueLight;
-            lblSubtitle.BackColor = AppTheme.Surface;
-            lblSubtitle.AutoSize = true;
-            lblSubtitle.Location = new Point(20, 42);
-
-            pnlHeader.Controls.AddRange(new Control[] { lblTitle, lblSubtitle });
-
-            // ── Contenu ───────────────────────────────────────────────────
-            pnlContent.Dock = DockStyle.Fill;
-            pnlContent.BackColor = AppTheme.Background;
-            pnlContent.Padding = new Padding(20, 16, 20, 0);
-
-            cboType.Items.AddRange(new string[]
+            dtDate.Value = DateTime.Today;
+            txtNotes.Height = S(84);
+            txtType.TextChanged += (s, e) => chipsType.SelectValue(txtType.Text);
+            chipsType.ChipClicked += (s, type) =>
             {
-                "Vidange", "Révision", "Freins", "Pneus", "Courroie",
-                "Filtres", "Batterie", "Amortisseurs", "Autre"
-            });
-            cboType.DropDownStyle = ComboBoxStyle.DropDown;
-            cboType.BackColor = AppTheme.Surface;
-            cboType.ForeColor = AppTheme.TextPrimary;
-            cboType.FlatStyle = FlatStyle.Flat;
+                txtType.Text = type;
+                txtType.Inner.SelectionStart = type.Length;
+            };
 
-            dtpDate.Format = DateTimePickerFormat.Short;
-            dtpDate.Value = DateTime.Today;
-            dtpDate.Font = AppTheme.FontNormal;
+            AddField("Type d'entretien", txtType, span: 3, required: true, bottomGap: S(10));
+            AddField(null, chipsType, span: 3, bottomGap: S(20));
+            AddField("Date", dtDate, required: true);
+            AddField("Kilométrage", txtKilometrage, required: true);
+            AddField("Coût (€)", txtCout, required: true);
+            AddField("Notes", txtNotes, span: 3);
 
-            txtNotes.Multiline = true;
-            txtNotes.Height = 60;
-
-            int y = 16;
-            pnlContent.Controls.Add(MakeField("Date", dtpDate, ref y));
-            pnlContent.Controls.Add(MakeField("Type *", cboType, ref y));
-            pnlContent.Controls.Add(MakeField("Kilométrage", txtKilometrage, ref y));
-            pnlContent.Controls.Add(MakeField("Coût (€)", txtCout, ref y));
-            pnlContent.Controls.Add(MakeFieldTall("Notes", txtNotes, ref y));
-
-            // ── Footer ────────────────────────────────────────────────────
-            pnlFooter.Dock = DockStyle.Bottom;
-            pnlFooter.Height = 60;
-            pnlFooter.BackColor = AppTheme.Surface;
-
-            btnConfirm.Text = "✔  Ajouter";
-            btnConfirm.Size = new Size(130, 38);
-            btnConfirm.Location = new Point(200, 11);
-            btnConfirm.Click += BtnConfirm_Click;
-
-            btnCancel.Text = "Annuler";
-            btnCancel.Size = new Size(100, 38);
-            btnCancel.Location = new Point(340, 11);
-            btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
-
-            pnlFooter.Controls.AddRange(new Control[] { btnConfirm, btnCancel });
-            this.Controls.AddRange(new Control[] { pnlContent, pnlFooter, pnlHeader });
-            this.AcceptButton = btnConfirm;
-        }
-
-        private Panel MakeField(string label, Control ctrl, ref int y)
-        {
-            var panel = new Panel { Location = new Point(0, y), Size = new Size(400, 54), BackColor = Color.Transparent };
-            var lbl = new Label { Text = label, Font = AppTheme.FontSmall, ForeColor = AppTheme.TextSub, AutoSize = true, Location = new Point(0, 0) };
-            ctrl.Font = AppTheme.FontNormal;
-            ctrl.Size = new Size(400, 28);
-            ctrl.Location = new Point(0, 20);
-            if (ctrl is TextBox tb) { tb.BackColor = AppTheme.Surface; tb.ForeColor = AppTheme.TextPrimary; tb.BorderStyle = BorderStyle.FixedSingle; }
-            panel.Controls.AddRange(new Control[] { lbl, ctrl });
-            y += 58;
-            return panel;
-        }
-
-        private Panel MakeFieldTall(string label, TextBox txt, ref int y)
-        {
-            var panel = new Panel { Location = new Point(0, y), Size = new Size(400, 84), BackColor = Color.Transparent };
-            var lbl = new Label { Text = label, Font = AppTheme.FontSmall, ForeColor = AppTheme.TextSub, AutoSize = true, Location = new Point(0, 0) };
-            txt.Font = AppTheme.FontNormal;
-            txt.BackColor = AppTheme.Surface;
-            txt.ForeColor = AppTheme.TextPrimary;
-            txt.BorderStyle = BorderStyle.FixedSingle;
-            txt.Size = new Size(400, 60);
-            txt.Location = new Point(0, 20);
-            panel.Controls.AddRange(new Control[] { lbl, txt });
-            y += 88;
-            return panel;
+            var confirm = AddFooterButton("Ajouter", ButtonVariant.Primary, Icons.Accept, BtnConfirm_Click);
+            var cancel = AddFooterButton("Annuler", ButtonVariant.Secondary, null,
+                (s, e) => { DialogResult = DialogResult.Cancel; Close(); });
+            AcceptButton = confirm;
+            CancelButton = cancel;
         }
 
         private void BtnConfirm_Click(object? sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(cboType.Text))
+            ClearError();
+            if (string.IsNullOrWhiteSpace(txtType.Text)) { ShowError("Le type d'entretien est obligatoire.", txtType); return; }
+            if (dtDate.Value is not DateTime date) { ShowError("Date invalide (jj/mm/aaaa).", dtDate); return; }
+            if (!TryParseInt(txtKilometrage.Text, out int km) || km < 0)
             {
-                MessageBox.Show("Le type d'entretien est obligatoire.", "Champ manquant", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ShowError("Kilométrage : nombre entier attendu.", txtKilometrage);
                 return;
             }
-            if (!int.TryParse(txtKilometrage.Text, out int km))
+            if (!TryParseFloat(txtCout.Text, out float cout) || cout < 0)
             {
-                MessageBox.Show("Le kilométrage doit être un nombre entier.", "Valeur invalide", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ShowError("Coût : nombre attendu (ex. 149,90).", txtCout);
                 return;
             }
-            if (!float.TryParse(txtCout.Text.Replace(',', '.'),
-                System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture, out float cout))
-            {
-                MessageBox.Show("Le coût doit être un nombre (ex: 149.90).", "Valeur invalide", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+
             Entretien = new Entretien
             {
                 vehicle_id = _vehicleId,
-                date_etretien = dtpDate.Value.ToString("yyyy-MM-dd"),
-                type_entretien = cboType.Text.Trim(),
+                date_etretien = date.ToString("yyyy-MM-dd"),
+                type_entretien = txtType.Text.Trim(),
                 kilometrage = km,
                 cout = cout,
                 notes = txtNotes.Text.Trim()
             };
-            this.DialogResult = DialogResult.OK;
-            this.Close();
+            DialogResult = DialogResult.OK;
+            Close();
         }
     }
 }
